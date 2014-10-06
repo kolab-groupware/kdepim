@@ -2923,12 +2923,13 @@ void KMMainWidget::showMessagePopup(const Akonadi::Item&msg ,const KUrl&url,cons
         menu->addAction( mMsgView->createEventAction() );
         menu->addAction( mMsgView->createNoteAction() );
         menu->addSeparator();
+
         if (mMsgView) {
             menu->addAction( mMsgView->saveMessageDisplayFormatAction() );
             menu->addAction( mMsgView->resetMessageDisplayFormatAction() );
             menu->addSeparator();
         }
-        menu->addAction( mMsgActions->annotateAction() );
+
         if (mMsgView && mMsgView->adblockEnabled()) {
             menu->addSeparator();
             menu->addAction( mMsgView->openBlockableItems());
