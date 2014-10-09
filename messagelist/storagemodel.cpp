@@ -233,7 +233,9 @@ bool StorageModel::initializeMessageItem( MessageList::Core::MessageItem *mi,
     }
 
     // Static for speed reasons
-    static const QString noSubject = i18nc( "displayed as subject when the subject of a mail is empty", "No Subject" );
+    static const QString noSubject = QLatin1Char( '(' ) +
+                                     i18nc( "displayed as subject when the subject of a mail is empty", "No Subject" ) +
+                                     QLatin1Char( ')' );
     static const QString unknown( i18nc( "displayed when a mail has unknown sender, receiver or date", "Unknown" ) );
 
     if ( sender.isEmpty() ) {
@@ -249,12 +251,8 @@ bool StorageModel::initializeMessageItem( MessageList::Core::MessageItem *mi,
                       bUseReceiver );
     mi->setItemId( item.id() );
 
-    QString subject = mail->subject()->asUnicodeString();
-    if ( subject.isEmpty() ) {
-        subject = QLatin1Char( '(' ) + noSubject + QLatin1Char( ')' );
-    }
-
-    mi->setSubject( subject );
+    const QString subject = mail->subject()->asUnicodeString();
+    mi->setSubject( subject.isEmpty() ? noSubject : subject );
 
     updateMessageItemData( mi, row );
 
