@@ -37,12 +37,11 @@ CreateNoteJob::CreateNoteJob(const KMime::Message::Ptr &notePtr, const Akonadi::
 
 CreateNoteJob::~CreateNoteJob()
 {
-    qDebug()<<" CreateNoteJob::~CreateNoteJob()";
 }
 
 void CreateNoteJob::start()
 {
-    mNote.setFrom(QCoreApplication::applicationName()+QCoreApplication::applicationVersion());
+    mNote.setFrom(QCoreApplication::applicationName() + QCoreApplication::applicationVersion());
     mNote.setLastModifiedDate(KDateTime::currentUtcDateTime());
 
     Akonadi::Item newNoteItem;
@@ -70,14 +69,6 @@ void CreateNoteJob::noteCreated(KJob *job)
 
 void CreateNoteJob::relationCreated(KJob *job)
 {
-   if ( job->error() ) {
-        qDebug() << "Error when creating the relation" << job->errorString();
-        setError( job->error() );
-        setErrorText( job->errorText() );
-
-        //FIXME NOTES_ON_EMAIL on failure, what to do with the note? leave it? clean it up? ...?
-   }
-
    emitResult();
 }
 
