@@ -18,8 +18,7 @@
 #include "createnotejob.h"
 
 #include <Akonadi/KMime/MessageParts>
-#include <Akonadi/ItemFetchJob>
-#include <Akonadi/ItemFetchScope>
+#include <Akonadi/RelationCreateJob>
 #include <Akonadi/ItemCreateJob>
 
 #include <KMime/Message>
@@ -43,52 +42,6 @@ CreateNoteJob::~CreateNoteJob()
 
 void CreateNoteJob::start()
 {
-    // We need the full payload to attach the mail
-    if ( !mItem.loadedPayloadParts().contains( Akonadi::MessagePart::Body ) ) {
-        Akonadi::ItemFetchJob *job = new Akonadi::ItemFetchJob( mItem );
-        job->fetchScope().fetchFullPayload();
-        connect( job, SIGNAL(result(KJob*)), this, SLOT(slotFetchDone(KJob*)) );
-
-        if ( job->exec() ) {
-            if ( job->items().count() == 1 ) {
-                mItem = job->items().first();
-            }
-        } else {
-            qDebug()<<" createNote: Error during fetch: "<<job->errorString();
-        }
-    } else {
-        createNote();
-    }
-}
-
-void CreateNoteJob::slotFetchDone(KJob *job)
-{
-    qDebug()<<" void CreateNoteJob::slotFetchDone(KJob *job)";
-    Akonadi::ItemFetchJob *fetchJob = qobject_cast<Akonadi::ItemFetchJob *>(job);
-    if ( fetchJob->items().count() == 1 ) {
-        mItem = fetchJob->items().first();
-    } else {
-        Q_EMIT emitResult();
-        return;
-    }
-    createNote();
-}
-
-void CreateNoteJob::createNote()
-{
-    if ( !mItem.hasPayload<KMime::Message::Ptr>() ) {
-        qDebug()<<" item has not payload";
-        Q_EMIT emitResult();
-        return;
-    }
-    KMime::Message::Ptr msg =  mItem.payload<KMime::Message::Ptr>();
-
-    Akonadi::NoteUtils::Attachment attachment(msg->encodedContent(), msg->mimeType());
-    const KMime::Headers::Subject * const subject = msg->subject(false);
-    if (subject)
-        attachment.setLabel(subject->asUnicodeString());
-    mNote.attachments().append(attachment);
-
     mNote.setFrom(QCoreApplication::applicationName()+QCoreApplication::applicationVersion());
     mNote.setLastModifiedDate(KDateTime::currentUtcDateTime());
 
@@ -97,13 +50,34 @@ void CreateNoteJob::createNote()
     newNoteItem.setPayload( mNote.message() );
 
     Akonadi::ItemCreateJob *createJob = new Akonadi::ItemCreateJob(newNoteItem, mCollection);
-    connect(createJob, SIGNAL(result(KJob*)), this, SLOT(slotCreateNewNote(KJob*)));
+    connect(createJob, SIGNAL(result(KJob*)), this, SLOT(noteCreated(KJob*)));
 }
 
-void CreateNoteJob::slotCreateNewNote(KJob *job)
+void CreateNoteJob::noteCreated(KJob *job)
 {
     if ( job->error() ) {
         qDebug() << "Error during create new Note "<<job->errorString();
+        setError( job->error() );
+        setErrorText( job->errorText() );
+        emitResult();
+    } else {
+        Akonadi::ItemCreateJob *createJob = static_cast<Akonadi::ItemCreateJob *> ( job );
+        Akonadi::Relation relation( Akonadi::Relation::GENERIC, mItem, createJob->item() );
+        Akonadi::RelationCreateJob *job = new Akonadi::RelationCreateJob( relation );
+        connect( job, SIGNAL( result( KJob * ) ), this, SLOT( relationCreated( KJob * ) ) );
     }
-    Q_EMIT emitResult();
 }
+
+void CreateNoteJob::relationCreated(KJob *job)
+{
+   if ( job->error() ) {
+        qDebug() << "Error when creating the relation" << job->errorString();
+        setError( job->error() );
+        setErrorText( job->errorText() );
+
+        //FIXME NOTES_ON_EMAIL on failure, what to do with the note? leave it? clean it up? ...?
+   }
+
+   emitResult();
+}
+
