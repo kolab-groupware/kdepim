@@ -260,14 +260,12 @@ QList< MessageItem::Tag * > MessageItem::tagList() const
 bool MessageItem::hasAnnotation() const
 {
     Q_D( const MessageItem );
-    //FIXME NOTES_ON_EMAIL
     return !d->mAkonadiItem.relations().isEmpty();
 }
 
 Akonadi::Item MessageItem::annotation() const
 {
     Q_D( const MessageItem );
-    //FIXME NOTES_ON_EMAIL
     if ( hasAnnotation() ) {
         Akonadi::Relation relation;
         foreach( const Akonadi::Relation &r, d->mAkonadiItem.relations() ) {
@@ -278,6 +276,7 @@ Akonadi::Item MessageItem::annotation() const
         }
 
         if ( relation.isValid() ) {
+          //FIXME NOTES_ON_EMAIL doesn't have payload here
             return relation.right();
         }
     }

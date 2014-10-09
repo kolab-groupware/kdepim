@@ -37,6 +37,7 @@
 #include <kmime/kmime_dateformatter.h> // kdepimlibs
 
 #include <Akonadi/Item>
+#include <Akonadi/Notes/NoteUtils>
 #include <QHelpEvent>
 #include <QToolTip>
 #include <QHeaderView>
@@ -2128,7 +2129,9 @@ void View::mousePressEvent( QMouseEvent * e )
                 switch ( d->mDelegate->hitContentItem()->type() )
                 {
                 case Theme::ContentItem::AnnotationIcon:
-                    static_cast< MessageItem * >( it )->editAnnotation();
+                    qDebug() <<" NEED TO SHOW THE EDITOR!";
+                    //FIXME: NOTES_ON_EMAIL
+                    //static_cast< MessageItem * >( it )->editAnnotation();
                     return; // don't select the item
                     break;
                 case Theme::ContentItem::ActionItemStateIcon:
@@ -2424,11 +2427,12 @@ bool View::event( QEvent *e )
             tip += htmlCodeForStandardRow.arg( mi->formattedSize() ).arg( i18n( "Size" ) );
         }
 
-        if ( mi->hasAnnotation() ) {
+        if ( mi->hasAnnotation() && mi->annotation().hasPayload<KMime::Message::Ptr>()) {
+            QString note = Akonadi::NoteUtils::NoteMessageWrapper( mi->annotation().payload<KMime::Message::Ptr>() ).text();
             if ( textIsLeftToRight ) {
-                tip += htmlCodeForStandardRow.arg( i18n( "Note" ) ).arg( mi->annotation().replace( QLatin1Char( '\n' ), QLatin1String( "<br>" ) ) );
+                tip += htmlCodeForStandardRow.arg( i18n( "Note" ) ).arg( note.replace( QLatin1Char( '\n' ), QLatin1String( "<br>" ) ) );
             } else {
-                tip += htmlCodeForStandardRow.arg( mi->annotation().replace( QLatin1Char( '\n' ), QLatin1String( "<br>" ) ) ).arg( i18n( "Note" ) );
+                tip += htmlCodeForStandardRow.arg( note.replace( QLatin1Char( '\n' ), QLatin1String( "<br>" ) ) ).arg( i18n( "Note" ) );
             }
         }
 
