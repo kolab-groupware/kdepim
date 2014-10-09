@@ -25,6 +25,7 @@
 #include "theme.h"
 
 #include <akonadi/item.h>
+#include <akonadi/relation.h>
 #include <akonadi/tagattribute.h>
 #include <akonadi/tagfetchjob.h>
 #include <akonadi/tagfetchscope.h>
@@ -41,8 +42,8 @@ class MessageItem::Tag::Private
     Private()
         :mPriority( 0 ) //Initialize it
     {
-
     }
+
     QPixmap mPixmap;
     QString mName;
     QString mId;             ///< The unique id of this tag
@@ -260,20 +261,28 @@ bool MessageItem::hasAnnotation() const
 {
     Q_D( const MessageItem );
     //FIXME NOTES_ON_EMAIL
-    return false;
+    return !d->mAkonadiItem.relations().isEmpty();
 }
 
-QString MessageItem::annotation() const
+Akonadi::Item MessageItem::annotation() const
 {
     Q_D( const MessageItem );
     //FIXME NOTES_ON_EMAIL
-    return QString();
-}
+    if ( hasAnnotation() ) {
+        Akonadi::Relation relation;
+        foreach( const Akonadi::Relation &r, d->mAkonadiItem.relations() ) {
+            if ( r.type() == Akonadi::Relation::GENERIC ) {
+                relation = r;
+                break;
+            }
+        }
 
-void MessageItem::editAnnotation()
-{
-    Q_D( MessageItem );
-    //FIXME: NOTES_ON_EMAIL
+        if ( relation.isValid() ) {
+            return relation.right();
+        }
+    }
+
+    return Akonadi::Item();
 }
 
 const MessageItem::Tag * MessageItemPrivate::findTagInternal( const QString &szTagId ) const
