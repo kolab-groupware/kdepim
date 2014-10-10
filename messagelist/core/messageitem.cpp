@@ -168,7 +168,6 @@ void MessageItemPrivate::invalidateTagCache()
 
 void MessageItemPrivate::invalidateAnnotationCache()
 {
-  //FIXME NOTES_ON_EMAIL
 }
 
 const MessageItem::Tag* MessageItemPrivate::bestTag() const
@@ -321,7 +320,6 @@ void MessageItem::invalidateTagCache()
 void MessageItem::invalidateAnnotationCache()
 {
     Q_D( MessageItem );
-    //FIXME: NOTES_ON_EMAIL
     d->invalidateAnnotationCache();
 }
 
