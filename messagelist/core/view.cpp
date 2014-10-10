@@ -2427,15 +2427,6 @@ bool View::event( QEvent *e )
             tip += htmlCodeForStandardRow.arg( mi->formattedSize() ).arg( i18n( "Size" ) );
         }
 
-        if ( mi->hasAnnotation() && mi->annotation().hasPayload<KMime::Message::Ptr>()) {
-            QString note = Akonadi::NoteUtils::NoteMessageWrapper( mi->annotation().payload<KMime::Message::Ptr>() ).text();
-            if ( textIsLeftToRight ) {
-                tip += htmlCodeForStandardRow.arg( i18n( "Note" ) ).arg( note.replace( QLatin1Char( '\n' ), QLatin1String( "<br>" ) ) );
-            } else {
-                tip += htmlCodeForStandardRow.arg( note.replace( QLatin1Char( '\n' ), QLatin1String( "<br>" ) ) ).arg( i18n( "Note" ) );
-            }
-        }
-
         QString content = MessageList::Util::contentSummary( mi->akonadiItem() );
         if ( !content.trimmed().isEmpty() ) {
             if ( textIsLeftToRight ) {
