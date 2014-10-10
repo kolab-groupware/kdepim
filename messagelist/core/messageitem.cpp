@@ -275,7 +275,6 @@ Akonadi::Item MessageItem::annotation() const
         }
 
         if ( relation.isValid() ) {
-          //FIXME NOTES_ON_EMAIL doesn't have payload here
             return relation.right();
         }
     }
