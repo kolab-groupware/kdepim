@@ -48,7 +48,7 @@
 #include "ldapclientsearchconfig.h"
 #include <kldap/ldapserver.h>
 
-#include "addhostdialog_p.h"
+#include "addhostdialog.h"
 
 K_PLUGIN_FACTORY( KCMLdapFactory, registerPlugin<KCMLdap>(); )
 K_EXPORT_PLUGIN( KCMLdapFactory( "kcmldap" ) )

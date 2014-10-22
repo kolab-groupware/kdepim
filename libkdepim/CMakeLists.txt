@@ -47,6 +47,7 @@ set(kdepim_LIB_SRCS
    ldap/ldapsearchdialog.cpp
    ldap/ldapclientsearch.cpp
    ldap/ldapclientsearchconfig.cpp
+   ldap/addhostdialog.cpp
    misc/broadcaststatus.cpp
    misc/maillistdrag.cpp
    misc/uistatesaver.cpp
@@ -134,7 +135,6 @@ endif ()
 ########### next target ###############
 
 set( kcm_ldap_SRCS
-     ldap/addhostdialog.cpp
      ldap/kcmldap.cpp
 )
 

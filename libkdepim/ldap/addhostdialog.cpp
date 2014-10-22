@@ -19,7 +19,7 @@
   Boston, MA 02110-1301, USA.
 */
 
-#include "addhostdialog_p.h"
+#include "addhostdialog.h"
 
 #include <QHBoxLayout>
 
@@ -147,4 +147,4 @@ void AddHostDialog::slotOk()
     KDialog::accept();
 }
 
-#include "moc_addhostdialog_p.cpp"
+#include "moc_addhostdialog.cpp"
