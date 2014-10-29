@@ -18,6 +18,8 @@
 */
 
 #include "ldap.h"
+#include <libkdepim/ldap/ldapclientsearchconfig.h>
+#include <libkdepim/ldap/addhostdialog.h>
 
 #include <KConfig>
 #include <KConfigGroup>
@@ -32,33 +34,51 @@ Ldap::Ldap( QObject *parent )
   , m_pageSize(0)
   , m_timeLimit(0)
   , m_sizeLimit(0)
+  , m_entry(-1)
+  , m_editMode(false)
+  , m_clientSearchConfig(new KLDAP::LdapClientSearchConfig)
 {
 }
 
 Ldap::~Ldap()
 {
+    delete m_clientSearchConfig;
 }
+
+KConfig *Ldap::config() const
+{
+    return m_clientSearchConfig->config();
+}
+
 
 void Ldap::create()
 {
+  //TODO: use ldapclientsearchconfig to write config
   emit info( i18n( "Setting up LDAP server..." ) );
 
-  if ( m_server.isEmpty() || m_user.isEmpty() )
+  if (m_server.isEmpty()) {
+    emit error(i18n("Needed parameters are missing for ldap config server='%1'", m_server));
+    if (m_editMode) {
+      edit();
+    }
     return;
+  }
 
   const QString host = m_server;
 
   // Figure out the basedn
-  QString basedn = host;
-  // If the user gave a full email address, the domain name
-  // of that overrides the server name for the ldap dn
-  const QString user = m_user;
-  int pos = user.indexOf( QLatin1String("@") );
-  if ( pos > 0 ) {
-    const QString h = user.mid( pos+1 );
-    if ( !h.isEmpty() )
-      // The user did type in a domain on the email address. Use that
-      basedn = h;
+  QString basedn = m_baseDn.isEmpty() ? host : m_baseDn;
+  if (m_baseDn.isEmpty() && !m_user.isEmpty()) {
+      // If the user gave a full email address, the domain name
+      // of that overrides the server name for the ldap dn
+      const QString user = m_user;
+      int pos = user.indexOf( QLatin1String("@") );
+      if ( pos > 0 ) {
+        const QString h = user.mid( pos+1 );
+        if ( !h.isEmpty() )
+          // The user did type in a domain on the email address. Use that
+          basedn = h;
+      }
   }
   { // while we're here, write default domain
     KConfig c( QLatin1String("kmail2rc") );
@@ -70,14 +90,18 @@ void Ldap::create()
   basedn.prepend( QLatin1String("dc=") );
 
   // Set the changes
-  KConfig c( QLatin1String("kabldaprc") );
-  KConfigGroup group = c.group( "LDAP" );
+  KConfig *c = config();
+  KConfigGroup group = c->group( "LDAP" );
   bool hasMyServer = false;
   uint selHosts = group.readEntry( "NumSelectedHosts", 0 );
-  for ( uint i = 0 ; i < selHosts && !hasMyServer; ++i )
-    if ( group.readEntry( QString::fromLatin1( "SelectedHost%1" ).arg( i ), QString() ) == host )
+  for ( uint i = 0 ; i < selHosts && !hasMyServer; ++i ) {
+    if ( group.readEntry( QString::fromLatin1( "SelectedHost%1" ).arg( i ), QString() ) == host ) {
       hasMyServer = true;
+      m_entry = i;
+    }
+  }
   if ( !hasMyServer ) {
+    m_entry = selHosts;
     group.writeEntry( "NumSelectedHosts", selHosts + 1 );
     group.writeEntry( QString::fromLatin1( "SelectedHost%1" ).arg( selHosts ), host );
     group.writeEntry( QString::fromLatin1( "SelectedBase%1" ).arg( selHosts ), basedn );
@@ -105,6 +129,10 @@ void Ldap::create()
       group.writeEntry( QString::fromLatin1( "SelectedUser%1" ).arg( selHosts ), m_user );
       group.writeEntry( QString::fromLatin1( "SelectedMech%1" ).arg( selHosts ), m_mech );
     }
+    c->sync();
+  }
+  if (m_editMode) {
+      edit();
   }
   emit finished( i18n( "LDAP set up." ) );
 }
@@ -124,8 +152,64 @@ QString Ldap::securityString()
 
 void Ldap::destroy()
 {
-  emit info( i18n( "LDAP not configuring." ) );
+  if (m_entry >= 0 ) {
+      KConfig *c = config();
+      KConfigGroup group = c->group( "LDAP" );
+      int cSelHosts = group.readEntry( "NumSelectedHosts", 0 );
+      int cHosts = group.readEntry( "NumHosts", 0 );
+      QList<KLDAP::LdapServer> selHosts;
+      QList<KLDAP::LdapServer> hosts;
+      for(int i=0; i < cSelHosts; i++) {
+          if (i != m_entry) {
+              KLDAP::LdapServer server;
+              m_clientSearchConfig->readConfig(server, group, i, true);
+              selHosts.append(server);
+          }
+      }
+      for(int i=0; i < cHosts; i++) {
+          KLDAP::LdapServer server;
+          m_clientSearchConfig->readConfig(server, group, i, false);
+          hosts.append(server);
+      }
+
+      c->deleteGroup("LDAP");
+      group = KConfigGroup (c, "LDAP");
+
+      for(int i=0; i < cSelHosts - 1; i++) {
+          m_clientSearchConfig->writeConfig(selHosts.at(i), group, i, true);
+      }
+
+      for(int i=0; i < cHosts; i++) {
+          m_clientSearchConfig->writeConfig(hosts.at(i), group, i, false);
+      }
+
+      group.writeEntry( "NumSelectedHosts", cSelHosts - 1);
+      group.writeEntry( "NumHosts", cHosts );
+      c->sync();
+
+      emit info(i18n("Removed LDAP entry."));
+  }
 }
+
+void Ldap::edit()
+{
+    if (m_entry < 0) {
+        emit error(i18n("No config found to edit"));
+        return;
+    }
+
+    KLDAP::LdapServer server;
+    KLDAP::LdapClientSearchConfig clientSearchConfig;
+    KConfigGroup group = clientSearchConfig.config()->group( "LDAP" );
+    clientSearchConfig.readConfig(server, group, m_entry, true);
+    AddHostDialog dlg(&server, 0);
+    dlg.setCaption(i18n("Edit Host"));
+
+    if ( dlg.exec() && !server.host().isEmpty() ) { //krazy:exclude=crashy
+        clientSearchConfig.writeConfig(server, group, m_entry, true);
+    }
+}
+
 
 void Ldap::setUser( const QString &user )
 {
@@ -135,6 +219,11 @@ void Ldap::setUser( const QString &user )
 void Ldap::setServer( const QString &server )
 {
   m_server = server;
+}
+
+void Ldap::setBaseDn(const QString &baseDn)
+{
+  m_baseDn = baseDn;
 }
 
 void Ldap::setAuthenticationMethod(const QString& meth)
@@ -193,3 +282,7 @@ void Ldap::setVersion(const int version)
     m_version = version;
 }
 
+void Ldap::setEditMode(const bool editMode)
+{
+    m_editMode = editMode;
+}

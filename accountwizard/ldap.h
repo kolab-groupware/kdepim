@@ -23,6 +23,13 @@
 #include "setupobject.h"
 #include <KLDAP/LdapServer>
 
+class LdapTest;
+class KConfig;
+
+namespace KLDAP {
+    class LdapClientSearchConfig;
+}
+
 class Ldap : public SetupObject
 {
   Q_OBJECT
@@ -31,11 +38,13 @@ class Ldap : public SetupObject
     ~Ldap();
     void create();
     void destroy();
+    void edit();
   public slots:
     Q_SCRIPTABLE void setUser( const QString & name );
     Q_SCRIPTABLE void setServer( const QString &server );
     Q_SCRIPTABLE void setAuthenticationMethod( const QString &meth );
     Q_SCRIPTABLE void setBindDn( const QString &bindDn );
+    Q_SCRIPTABLE void setBaseDn( const QString &baseDn );
     Q_SCRIPTABLE void setPassword( const QString &password );
     Q_SCRIPTABLE void setPort(const int port);
     Q_SCRIPTABLE void setSecurity(const KLDAP::LdapServer::Security security);
@@ -45,8 +54,14 @@ class Ldap : public SetupObject
     Q_SCRIPTABLE void setPageSize(const int pageSize);
     Q_SCRIPTABLE void setTimeLimit(const int timeLimit);
     Q_SCRIPTABLE void setSizeLimit(const int sizeLimit);
+    Q_SCRIPTABLE void setEditMode(const bool editMode);
 
+  protected:
+    virtual KConfig *config() const;
+
+    KLDAP::LdapClientSearchConfig *m_clientSearchConfig;
   private:
+    friend LdapTest;
     QString securityString();
 
     QString m_user;
@@ -58,10 +73,13 @@ class Ldap : public SetupObject
     KLDAP::LdapServer::Security m_security;
     QString m_mech;
     QString m_realm;
+    QString m_baseDn;
     int m_version;
     int m_pageSize;
     int m_timeLimit;
     int m_sizeLimit;
+    int m_entry;
+    bool m_editMode;
 };
 
 #endif
