@@ -18,9 +18,10 @@
 #include "createnotejob.h"
 
 #include <Akonadi/KMime/MessageParts>
-#include <Akonadi/ItemFetchJob>
-#include <Akonadi/ItemFetchScope>
+#include <Akonadi/RelationCreateJob>
 #include <Akonadi/ItemCreateJob>
+#include <Akonadi/ItemModifyJob>
+#include <Akonadi/Relation>
 
 #include <KMime/Message>
 #include <QApplication>
@@ -38,72 +39,67 @@ CreateNoteJob::CreateNoteJob(const KMime::Message::Ptr &notePtr, const Akonadi::
 
 CreateNoteJob::~CreateNoteJob()
 {
-    qDebug()<<" CreateNoteJob::~CreateNoteJob()";
 }
 
 void CreateNoteJob::start()
 {
-    // We need the full payload to attach the mail
-    if ( !mItem.loadedPayloadParts().contains( Akonadi::MessagePart::Body ) ) {
-        Akonadi::ItemFetchJob *job = new Akonadi::ItemFetchJob( mItem );
-        job->fetchScope().fetchFullPayload();
-        connect( job, SIGNAL(result(KJob*)), this, SLOT(slotFetchDone(KJob*)) );
-
-        if ( job->exec() ) {
-            if ( job->items().count() == 1 ) {
-                mItem = job->items().first();
-            }
-        } else {
-            qDebug()<<" createNote: Error during fetch: "<<job->errorString();
-        }
-    } else {
-        createNote();
-    }
-}
-
-void CreateNoteJob::slotFetchDone(KJob *job)
-{
-    qDebug()<<" void CreateNoteJob::slotFetchDone(KJob *job)";
-    Akonadi::ItemFetchJob *fetchJob = qobject_cast<Akonadi::ItemFetchJob *>(job);
-    if ( fetchJob->items().count() == 1 ) {
-        mItem = fetchJob->items().first();
-    } else {
-        Q_EMIT emitResult();
-        return;
-    }
-    createNote();
-}
-
-void CreateNoteJob::createNote()
-{
-    if ( !mItem.hasPayload<KMime::Message::Ptr>() ) {
-        qDebug()<<" item has not payload";
-        Q_EMIT emitResult();
-        return;
-    }
-    KMime::Message::Ptr msg =  mItem.payload<KMime::Message::Ptr>();
-
-    Akonadi::NoteUtils::Attachment attachment(msg->encodedContent(), msg->mimeType());
-    const KMime::Headers::Subject * const subject = msg->subject(false);
-    if (subject)
-        attachment.setLabel(subject->asUnicodeString());
-    mNote.attachments().append(attachment);
-
-    mNote.setFrom(QCoreApplication::applicationName()+QCoreApplication::applicationVersion());
+    mNote.setFrom(QCoreApplication::applicationName() + QCoreApplication::applicationVersion());
     mNote.setLastModifiedDate(KDateTime::currentUtcDateTime());
+    if (!mItem.relations().isEmpty())  {
+        Akonadi::Relation relation;
+        foreach (const Akonadi::Relation &r, mItem.relations()) {
+            // assuming that GENERIC relations to emails are notes is a pretty horirific hack imo - aseigo
+            if (r.type() == Akonadi::Relation::GENERIC/* && r.right().mimeType() == Akonadi::NoteUtils::noteMimeType(*/) {
+                relation = r;
+                break;
+            }
+        }
+
+        if (relation.isValid()) {
+            Akonadi::Item item = relation.right();
+            item.setMimeType(Akonadi::NoteUtils::noteMimeType());
+            item.setPayload(mNote.message());
+            Akonadi::ItemModifyJob *modifyJob = new Akonadi::ItemModifyJob(item);
+            connect(modifyJob, SIGNAL(result(KJob*)), this, SLOT(noteUpdated(KJob*)));
+            return;
+        }
+    }
 
     Akonadi::Item newNoteItem;
     newNoteItem.setMimeType( Akonadi::NoteUtils::noteMimeType() );
     newNoteItem.setPayload( mNote.message() );
-
     Akonadi::ItemCreateJob *createJob = new Akonadi::ItemCreateJob(newNoteItem, mCollection);
-    connect(createJob, SIGNAL(result(KJob*)), this, SLOT(slotCreateNewNote(KJob*)));
+    connect(createJob, SIGNAL(result(KJob*)), this, SLOT(noteCreated(KJob*)));
 }
 
-void CreateNoteJob::slotCreateNewNote(KJob *job)
+void CreateNoteJob::noteCreated(KJob *job)
 {
     if ( job->error() ) {
         qDebug() << "Error during create new Note "<<job->errorString();
+        setError( job->error() );
+        setErrorText( job->errorText() );
+        emitResult();
+    } else {
+        Akonadi::ItemCreateJob *createJob = static_cast<Akonadi::ItemCreateJob *> ( job );
+        Akonadi::Relation relation( Akonadi::Relation::GENERIC, mItem, createJob->item() );
+        Akonadi::RelationCreateJob *job = new Akonadi::RelationCreateJob( relation );
+        connect( job, SIGNAL( result( KJob * ) ), this, SLOT( relationCreated( KJob * ) ) );
     }
-    Q_EMIT emitResult();
 }
+
+void CreateNoteJob::noteUpdated(KJob *job)
+{
+    if ( job->error() ) {
+        setError( job->error() );
+        setErrorText( job->errorText() );
+    }
+
+    emitResult();
+}
+
+void CreateNoteJob::relationCreated(KJob *job)
+{
+   Q_UNUSED(job)
+   emitResult();
+}
+

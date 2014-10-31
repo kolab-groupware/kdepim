@@ -22,11 +22,10 @@
 #include "messageitem.h"
 #include "messageitem_p.h"
 
-#include "messagecore/widgets/annotationdialog.h"
 #include "theme.h"
 
 #include <akonadi/item.h>
-#include <akonadi/entityannotationsattribute.h>
+#include <akonadi/relation.h>
 #include <akonadi/tagattribute.h>
 #include <akonadi/tagfetchjob.h>
 #include <akonadi/tagfetchscope.h>
@@ -43,8 +42,8 @@ class MessageItem::Tag::Private
     Private()
         :mPriority( 0 ) //Initialize it
     {
-
     }
+
     QPixmap mPixmap;
     QString mName;
     QString mId;             ///< The unique id of this tag
@@ -260,37 +259,27 @@ QList< MessageItem::Tag * > MessageItem::tagList() const
 bool MessageItem::hasAnnotation() const
 {
     Q_D( const MessageItem );
-    //TODO check for note entry?
-    return d->mAkonadiItem.hasAttribute<Akonadi::EntityAnnotationsAttribute>();
+    return !d->mAkonadiItem.relations().isEmpty();
 }
 
-QString MessageItem::annotation() const
+Akonadi::Item MessageItem::annotation() const
 {
     Q_D( const MessageItem );
-    if ( d->mAkonadiItem.hasAttribute<Akonadi::EntityAnnotationsAttribute>() ) {
-        Akonadi::EntityAnnotationsAttribute *attr = d->mAkonadiItem.attribute<Akonadi::EntityAnnotationsAttribute>();
-        const QMap<QByteArray, QByteArray> annotations = attr->annotations();
-        if (annotations.contains("/private/comment")) {
-            return QString::fromLatin1(annotations.value("/private/comment"));
+    if ( hasAnnotation() ) {
+        Akonadi::Relation relation;
+        foreach( const Akonadi::Relation &r, d->mAkonadiItem.relations() ) {
+            if ( r.type() == Akonadi::Relation::GENERIC ) {
+                relation = r;
+                break;
+            }
         }
-        if (annotations.contains("/shared/comment")) {
-            return QString::fromLatin1(annotations.value("/shared/comment"));
-        }
-    }
-    return QString();
-}
 
-void MessageItem::editAnnotation()
-{
-    Q_D( MessageItem );
-    if ( d->mAnnotationDialog.data() )
-        return;
-    d->mAnnotationDialog = new MessageCore::AnnotationEditDialog( d->mAkonadiItem );
-    d->mAnnotationDialog.data()->setAttribute( Qt::WA_DeleteOnClose );
-    //FIXME make async
-    if ( d->mAnnotationDialog.data()->exec() ) {
-        // invalidate the cached mHasAnnotation value
+        if ( relation.isValid() ) {
+            return relation.right();
+        }
     }
+
+    return Akonadi::Item();
 }
 
 const MessageItem::Tag * MessageItemPrivate::findTagInternal( const QString &szTagId ) const

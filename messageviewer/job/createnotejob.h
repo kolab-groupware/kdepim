@@ -38,8 +38,9 @@ public:
     void start();
 
 private slots:
-    void slotFetchDone(KJob *job);
-    void slotCreateNewNote(KJob *job);
+    void noteCreated(KJob *job);
+    void noteUpdated(KJob *job);
+    void relationCreated(KJob *job);
 
 private:
     void createNote();

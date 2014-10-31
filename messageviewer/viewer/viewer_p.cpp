@@ -1348,6 +1348,16 @@ void ViewerPrivate::resetStateForNewMessage()
 void ViewerPrivate::setMessageInternal( const KMime::Message::Ptr message,
                                         Viewer::UpdateMode updateMode )
 {
+    QString createNoteText;
+    if ( mMessageItem.relations().isEmpty() ) {
+        createNoteText = i18nc( "create a new note out of this message", "Create Note" );
+    } else {
+        createNoteText = i18nc( "edit a note on this message", "Edit Note" );
+    }
+
+    mCreateNoteAction->setText( createNoteText );
+    mCreateNoteAction->setIconText( createNoteText );
+
     mMessage = message;
     if ( message ) {
         mNodeHelper->setOverrideCodec( mMessage.get(), overrideCodec() );
@@ -1888,7 +1898,7 @@ void ViewerPrivate::createActions()
     mCreateNoteAction = new KAction(KIcon( QLatin1String("view-pim-notes") ),i18nc("create a new note out of this message", "Create Note"), this);
     mCreateNoteAction->setIconText( i18nc("create a new note out of this message", "Create Note") );
     mCreateNoteAction->setHelpText( i18n("Allows you to create a note from this message") );
-    mCreateNoteAction->setWhatsThis( i18n( "This option starts a editor to create a note. Then you can edit the note to your liking before saving it." ) );
+    mCreateNoteAction->setWhatsThis( i18n( "This option starts an editor to create a note. Then you can edit the note to your liking before saving it." ) );
     ac->addAction(QLatin1String("create_note"), mCreateNoteAction);
     connect( mCreateNoteAction, SIGNAL(triggered(bool)), SLOT(slotShowCreateNoteWidget()) );
 }
@@ -3403,7 +3413,7 @@ void ViewerPrivate::slotExpandShortUrl()
 
 void ViewerPrivate::slotShowCreateTodoWidget()
 {
-    if (mMessage) {       
+    if (mMessage) {
         mCreateTodo->setMessage(mMessage);
         mCreateTodo->showToDoWidget();
     } else {
@@ -3435,11 +3445,51 @@ void ViewerPrivate::slotCreateEvent(const KCalCore::Event::Ptr &eventPtr, const 
 
 void ViewerPrivate::slotShowCreateNoteWidget()
 {
+    if (!mMessageItem.relations().isEmpty())  {
+        Akonadi::Relation relation;
+        foreach (const Akonadi::Relation &r, mMessageItem.relations()) {
+            // assuming that GENERIC relations to emails are notes is a pretty horirific hack imo - aseigo
+            if (r.type() == Akonadi::Relation::GENERIC/* && r.right().mimeType() == Akonadi::NoteUtils::noteMimeType(*/) {
+                relation = r;
+                break;
+            }
+        }
+
+        if (relation.isValid()) {
+            Akonadi::ItemFetchJob* job = new Akonadi::ItemFetchJob(relation.right());
+            job->fetchScope().fetchFullPayload(true);
+            connect(job, SIGNAL(result(KJob*)), this, SLOT(slotNoteItemFetched(KJob*)));
+            return;
+        }
+    }
+
+    showCreateNewNoteWidget();
+}
+
+void ViewerPrivate::showCreateNewNoteWidget()
+{
     if (mMessage) {
         mCreateNote->setMessage(mMessage);
         mCreateNote->showNoteEdit();
     } else {
-        qDebug()<<" There is not valid message";
+        qDebug() << "There is not valid message";
+    }
+}
+
+void ViewerPrivate::slotNoteItemFetched(KJob *job)
+{
+    if (job->error()) {
+        showCreateNewNoteWidget();
+    } else {
+        Akonadi::ItemFetchJob *fetch = qobject_cast<Akonadi::ItemFetchJob*>( job );
+        Q_ASSERT( fetch );
+        if (fetch->items().isEmpty() || !fetch->items().first().hasPayload<KMime::Message::Ptr>()) {
+            showCreateNewNoteWidget();
+        } else {
+            Akonadi::NoteUtils::NoteMessageWrapper note(fetch->items().first().payload<KMime::Message::Ptr>());
+            mCreateNote->setMessage(note.message());
+            mCreateNote->showNoteEdit();
+        }
     }
 }
 
