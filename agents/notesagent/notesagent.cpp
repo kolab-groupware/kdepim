@@ -93,7 +93,7 @@ bool NotesAgent::enabledAgent() const
 
 void NotesAgent::configure( WId windowId )
 {
-    showConfigureDialog(windowId);
+    showConfigureDialog((qlonglong)windowId);
 }
 
 void NotesAgent::showConfigureDialog(qlonglong windowId)
