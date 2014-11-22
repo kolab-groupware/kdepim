@@ -14,6 +14,7 @@ target_link_libraries(autocorrection_gui
   ${KDE4_KDEUI_LIBS}
   ${QT_QTWEBKIT_LIBRARY}
   ${KDE4_KIO_LIBS}
+  kdepim
   pimcommon
 )
 
