@@ -834,7 +834,9 @@ void AgendaView::init( const QDate &start, const QDate &end )
 AgendaView::~AgendaView()
 {
   foreach(const ViewCalendar::Ptr &cal, d->mViewCalendar->mSubCalendars) {
-    cal->getCalendar()->unregisterObserver(d);
+    if (cal->getCalendar()) {
+      cal->getCalendar()->unregisterObserver(d);
+    }
   }
 
   delete d;
