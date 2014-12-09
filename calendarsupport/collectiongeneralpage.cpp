@@ -113,7 +113,7 @@ void CollectionGeneralPage::load( const Akonadi::Collection &collection )
   const QString displayName = collection.displayName();
 
   mNameEdit->setText( displayName );
-  mBlockAlarmsCheckBox->setChecked( collection.hasAttribute<BlockAlarmsAttribute>() );
+  mBlockAlarmsCheckBox->setChecked( collection.hasAttribute<BlockAlarmsAttribute>() && collection.attribute<BlockAlarmsAttribute>()->isEverythingBlocked() );
 
   QString iconName;
   if ( collection.hasAttribute<EntityDisplayAttribute>() ) {
@@ -151,12 +151,14 @@ void CollectionGeneralPage::save( Collection &collection )
     collection.setName( mNameEdit->text() );
   }
 
-  if ( mBlockAlarmsCheckBox->isChecked() ) {
-    if ( !collection.hasAttribute<BlockAlarmsAttribute>() ) {
+  if ( !collection.hasAttribute<BlockAlarmsAttribute>() ) {
       collection.attribute<BlockAlarmsAttribute>( Collection::AddIfMissing );
-    }
+  }
+
+  if ( mBlockAlarmsCheckBox->isChecked() ) {
+      collection.attribute<BlockAlarmsAttribute>()->blockEverything(true);
   } else {
-    collection.removeAttribute<BlockAlarmsAttribute>();
+      collection.attribute<BlockAlarmsAttribute>()->blockEverything(false);
   }
 
 #ifndef KDEPIM_MOBILE_UI
