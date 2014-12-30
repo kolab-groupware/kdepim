@@ -41,13 +41,24 @@ IF(BUILD_todo)
 ENDIF(BUILD_todo)
 ########### next target ###############
 
-set(kontact_journalplugin_PART_SRCS journalplugin.cpp ${libcommon_SRCS})
+IF(DISABLE_ALL_OPTIONAL_PLUGINS  AND NOT DEFINED  BUILD_journal)
+  SET(_DEFAULT_OPTION_VALUE FALSE)
+ENDIF(DISABLE_ALL_OPTIONAL_PLUGINS  AND NOT DEFINED  BUILD_journal)
 
-qt4_add_dbus_interfaces(kontact_journalplugin_PART_SRCS ${CMAKE_SOURCE_DIR}/korganizer/org.kde.Korganizer.Calendar.xml)
+OPTION(BUILD_journal "Build journal plugin" ${_DEFAULT_OPTION_VALUE})
+IF(BUILD_journal)
+    set(kontact_journalplugin_PART_SRCS journalplugin.cpp ${libcommon_SRCS})
 
-kde4_add_plugin(kontact_journalplugin ${kontact_journalplugin_PART_SRCS})
+    qt4_add_dbus_interfaces(kontact_journalplugin_PART_SRCS ${CMAKE_SOURCE_DIR}/korganizer/org.kde.Korganizer.Calendar.xml)
 
-target_link_libraries(kontact_journalplugin ${KDE4_KPARTS_LIBS} ${KDEPIMLIBS_KONTACTINTERFACE_LIBS})
+    kde4_add_plugin(kontact_journalplugin ${kontact_journalplugin_PART_SRCS})
+
+    target_link_libraries(kontact_journalplugin ${KDE4_KPARTS_LIBS} ${KDEPIMLIBS_KONTACTINTERFACE_LIBS})
+
+    install(TARGETS kontact_journalplugin DESTINATION ${PLUGIN_INSTALL_DIR})
+    install(FILES journalplugin.desktop DESTINATION ${SERVICES_INSTALL_DIR}/kontact)
+
+ENDIF(BUILD_journal)
 
 ########### next target ###############
 
@@ -85,9 +96,8 @@ add_subdirectory(tests)
 
 install(TARGETS kcm_apptsummary DESTINATION ${PLUGIN_INSTALL_DIR})
 install(TARGETS kontact_korganizerplugin DESTINATION ${PLUGIN_INSTALL_DIR})
-install(TARGETS kontact_journalplugin DESTINATION ${PLUGIN_INSTALL_DIR})
 
-install(FILES korganizerplugin.desktop journalplugin.desktop DESTINATION ${SERVICES_INSTALL_DIR}/kontact)
+install(FILES korganizerplugin.desktop DESTINATION ${SERVICES_INSTALL_DIR}/kontact)
 install(FILES kcmapptsummary.desktop DESTINATION ${SERVICES_INSTALL_DIR})
 
 install(FILES korganizer.setdlg DESTINATION ${DATA_INSTALL_DIR}/kontact/ksettingsdialog)
