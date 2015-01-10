@@ -101,6 +101,7 @@ public:
 
 signals:
     void typeModified( RecipientLineNG* );
+    void addRecipient( RecipientLineNG*, const QString &);
     void countChanged();
 
 protected slots:
@@ -117,6 +118,8 @@ private:
     bool mModified;
     QSharedPointer<Recipient> mData;
 
+private slots:
+    void slotAddRecipient(const QString &);
 };
 
 }

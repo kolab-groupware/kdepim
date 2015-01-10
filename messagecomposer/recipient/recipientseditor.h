@@ -92,6 +92,7 @@ protected slots:
     void slotLineAdded( KPIM::MultiplyingLine* );
     void slotLineDeleted( int pos );
     void slotCalculateTotal();
+    void addRecipient( RecipientLineNG*, const QString &);
 
 protected:
     virtual RecipientLineNG* activeLine() const;

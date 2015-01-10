@@ -49,9 +49,11 @@ RecipientLineFactory::RecipientLineFactory( QObject* parent )
 
 }
 
-KPIM::MultiplyingLine* RecipientLineFactory::newLine(  QWidget *parent )
+KPIM::MultiplyingLine* RecipientLineFactory::newLine(  QWidget *widget )
 {
-    return new RecipientLineNG( parent );
+    RecipientLineNG *line = new RecipientLineNG( widget );
+    connect(line, SIGNAL(addRecipient(RecipientLineNG*,QString)), qobject_cast<RecipientsEditor * >(parent()), SLOT(addRecipient(RecipientLineNG*,QString)));
+    return line;
 }
 
 int RecipientLineFactory::maximumRecipients()
@@ -92,6 +94,11 @@ RecipientsEditor::~RecipientsEditor()
 bool RecipientsEditor::addRecipient( const QString& recipient, Recipient::Type type )
 {
     return addData( Recipient::Ptr(  new Recipient ( recipient, type ) ) );
+}
+
+void RecipientsEditor::addRecipient(RecipientLineNG *line, const QString &recipient)
+{
+    addRecipient(recipient, line->recipientType());
 }
 
 void RecipientsEditor::setRecipientString( const QList< KMime::Types::Mailbox >& mailboxes, Recipient::Type type )

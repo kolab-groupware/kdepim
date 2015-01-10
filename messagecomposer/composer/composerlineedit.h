@@ -24,6 +24,8 @@
 
 #include "messagecomposer_export.h"
 #include <libkdepim/addressline/addresseelineedit.h>
+#include <ldap/ldapclientsearch.h>
+#include <kabc/contactgroup.h>
 
 namespace MessageComposer {
 
@@ -36,9 +38,13 @@ public:
 
     void setRecentAddressConfig( KConfig* config );
 
+    void setExpandIntern(bool);
+    bool expandIntern();
+
 signals:
     void focusUp();
     void focusDown();
+    void addAddress(const QString &address);
 
 protected:
 
@@ -51,9 +57,15 @@ protected:
     virtual void contextMenuEvent( QContextMenuEvent*e );
 #endif
 
+public slots:
+    void expandGroups();
+
 private slots:
     void editRecentAddresses();
-    void groupDropExpandResult( KJob* );
+    void groupExpandResult( KJob* );
+    void slotEditingFinished();
+    void slotGroupSearchResult( KJob* );
+    void slotToggleExpandGroups();
 
 private:
 #ifndef QT_NO_DRAGANDDROP
@@ -63,6 +75,10 @@ private:
 
 private:
     KConfig* m_recentAddressConfig;
+    QList<KJob *> mMightBeGroupJobs;
+    KABC::ContactGroup::List mGroups;
+    bool mAutoGroupExpand;
+    bool mExpandIntern;
 };
 
 }
