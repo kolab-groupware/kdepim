@@ -247,6 +247,17 @@ public:
     void akonadiHandlePending();
     void doCompletion( bool ctrlT );
 
+    /* stips the name of an email address email
+     *
+     * 'a' <a@example.com> -> a <a@example.com>
+     * "a" <a@example.com> -> a <a@example.com>
+     * "\"'a'\"" <a@example.com> -> a <a@example.com>
+     *
+     * but "\"'a" <a@example.com> -> "\"'a" <a@example.com>
+     * cause the start and end is not the same.
+     */
+    QString stripEmail(const QString &email);
+
     void slotCompletion();
     void slotPopupCompletion( const QString & );
     void slotReturnPressed( const QString & );
@@ -375,12 +386,31 @@ QStringList AddresseeLineEdit::Private::cleanupBalooContact(const QStringList &l
     return hashEmail.keys();
 }
 
+QString AddresseeLineEdit::Private::stripEmail(const QString &email)
+{
+    QString displayName, addrSpec, comment;
+    if ( KPIMUtils::AddressOk == KPIMUtils::splitAddress( email, displayName, addrSpec, comment )) {
+        while ((displayName.startsWith(QLatin1Char('\'')) && displayName.endsWith(QLatin1Char('\''))) ||
+                    (displayName.startsWith(QLatin1Char('"')) && displayName.endsWith(QLatin1Char('"'))) ||
+                    (displayName.startsWith(QLatin1String("\\\"")) && displayName.endsWith(QLatin1String("\\\""))) ) {
+            if (displayName.startsWith(QLatin1String("\\\""))) {
+                displayName = displayName.mid(2, displayName.length()-4).trimmed();
+            } else {
+                displayName = displayName.mid(1, displayName.length()-2).trimmed();
+            }
+        }
+        return KPIMUtils::normalizedAddress(displayName, addrSpec, comment);
+    } else {
+        return email;
+    }
+}
+
 void AddresseeLineEdit::Private::searchInBaloo()
 {
     Baloo::PIM::ContactCompleter com(m_searchString.trimmed(), 20);
     const QStringList listEmail = cleanupBalooContact(com.complete());
     Q_FOREACH (const QString& email, listEmail) {
-        addCompletionItem(email, 1, s_static->balooCompletionSource);
+        addCompletionItem(stripEmail(email), 1, s_static->balooCompletionSource);
     }
     doCompletion( m_lastSearchMode );
     //  if ( q->hasFocus() || q->completionBox()->hasFocus() ) {
@@ -1291,7 +1321,7 @@ void AddresseeLineEdit::addContact( const KABC::Addressee &addr, int weight, int
         const QString givenName = addr.givenName();
         const QString familyName= addr.familyName();
         const QString nickName  = addr.nickName();
-        QString fullEmail       = addr.fullEmail( email );
+        QString fullEmail       = d->stripEmail(addr.fullEmail( email ));
 
         QString appendix;
 
@@ -1312,7 +1342,7 @@ void AddresseeLineEdit::addContact( const KABC::Addressee &addr, int weight, int
 
         // Finally, we can add the completion items
         if (!fullName.isEmpty()) {
-            const QString address = KPIMUtils::normalizedAddress(fullName, email, QString());
+            const QString address = d->stripEmail(KPIMUtils::normalizedAddress(fullName, email, QString()));
             if (fullEmail != address) {
                 // This happens when fullEmail contains a middle name, while our own fullName+email only has "first last".
                 // Let's offer both, the fullEmail with 3 parts, looks a tad formal.
