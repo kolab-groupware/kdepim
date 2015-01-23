@@ -21,6 +21,7 @@
 #include <Akonadi/ItemFetchJob>
 #include <Akonadi/ItemFetchScope>
 #include <Akonadi/ItemCreateJob>
+#include <Akonadi/RelationCreateJob>
 
 #include <KMime/Message>
 #include <QDebug>
@@ -80,24 +81,33 @@ void CreateTodoJob::createTodo()
         Q_EMIT emitResult();
         return;
     }
-    KMime::Message::Ptr msg =  mItem.payload<KMime::Message::Ptr>();
-
-    KCalCore::Attachment::Ptr attachmentPtr(new KCalCore::Attachment( msg->encodedContent().toBase64(), KMime::Message::mimeType() ));
-    attachmentPtr->setLabel(msg->subject(false)->asUnicodeString());
-    mTodoPtr->addAttachment(attachmentPtr);
 
     Akonadi::Item newTodoItem;
     newTodoItem.setMimeType( KCalCore::Todo::todoMimeType() );
     newTodoItem.setPayload<KCalCore::Todo::Ptr>( mTodoPtr );
 
     Akonadi::ItemCreateJob *createJob = new Akonadi::ItemCreateJob(newTodoItem, mCollection);
-    connect(createJob, SIGNAL(result(KJob*)), this, SLOT(slotCreateNewTodo(KJob*)));
+    connect(createJob, SIGNAL(result(KJob*)), this, SLOT(todoCreated(KJob*)));
 }
 
-void CreateTodoJob::slotCreateNewTodo(KJob *job)
+void CreateTodoJob::todoCreated(KJob *job)
 {
     if ( job->error() ) {
         qDebug() << "Error during create new Todo "<<job->errorString();
+        setError( job->error() );
+        setErrorText( job->errorText() );
+        emitResult();
+    } else {
+        Akonadi::ItemCreateJob *createJob = static_cast<Akonadi::ItemCreateJob *> ( job );
+        Akonadi::Relation relation( Akonadi::Relation::GENERIC, mItem, createJob->item() );
+        Akonadi::RelationCreateJob *job = new Akonadi::RelationCreateJob( relation );
+        connect( job, SIGNAL( result( KJob * ) ), this, SLOT( relationCreated( KJob * ) ) );
     }
-    Q_EMIT emitResult();
+}
+
+
+void CreateTodoJob::relationCreated(KJob *job)
+{
+   Q_UNUSED(job)
+   emitResult();
 }
