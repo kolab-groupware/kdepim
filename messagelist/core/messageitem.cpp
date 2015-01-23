@@ -29,6 +29,7 @@
 #include <akonadi/tagattribute.h>
 #include <akonadi/tagfetchjob.h>
 #include <akonadi/tagfetchscope.h>
+#include <Akonadi/Notes/NoteUtils>
 #include <KIconLoader>
 #include <KLocalizedString>
 
@@ -170,6 +171,18 @@ void MessageItemPrivate::invalidateAnnotationCache()
 {
 }
 
+Akonadi::Relation MessageItemPrivate::relatedNoteRelation() const
+{
+    Akonadi::Relation relation;
+    foreach (const Akonadi::Relation &r, mAkonadiItem.relations()) {
+        if (r.type() == Akonadi::Relation::GENERIC && r.right().mimeType() == Akonadi::NoteUtils::noteMimeType() ) {
+            relation = r;
+            break;
+        }
+    }
+    return relation;
+}
+
 const MessageItem::Tag* MessageItemPrivate::bestTag() const
 {
     const MessageItem::Tag *best = 0;
@@ -259,20 +272,14 @@ QList< MessageItem::Tag * > MessageItem::tagList() const
 bool MessageItem::hasAnnotation() const
 {
     Q_D( const MessageItem );
-    return !d->mAkonadiItem.relations().isEmpty();
+    return d->relatedNoteRelation().isValid();
 }
 
 Akonadi::Item MessageItem::annotation() const
 {
     Q_D( const MessageItem );
     if ( hasAnnotation() ) {
-        Akonadi::Relation relation;
-        foreach( const Akonadi::Relation &r, d->mAkonadiItem.relations() ) {
-            if ( r.type() == Akonadi::Relation::GENERIC ) {
-                relation = r;
-                break;
-            }
-        }
+        Akonadi::Relation relation = d->relatedNoteRelation();
 
         if ( relation.isValid() ) {
             return relation.right();

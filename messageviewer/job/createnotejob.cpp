@@ -49,7 +49,7 @@ void CreateNoteJob::start()
         Akonadi::Relation relation;
         foreach (const Akonadi::Relation &r, mItem.relations()) {
             // assuming that GENERIC relations to emails are notes is a pretty horirific hack imo - aseigo
-            if (r.type() == Akonadi::Relation::GENERIC/* && r.right().mimeType() == Akonadi::NoteUtils::noteMimeType(*/) {
+            if (r.type() == Akonadi::Relation::GENERIC && r.right().mimeType() == Akonadi::NoteUtils::noteMimeType() ) {
                 relation = r;
                 break;
             }

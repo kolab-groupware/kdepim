@@ -64,6 +64,8 @@ public:
   // This creates mTagList and fills it with useful data
   void fillTagList( const Akonadi::Tag::List &taglist );
 
+  Akonadi::Relation relatedNoteRelation() const;
+
   QByteArray mMessageIdMD5;            ///< always set
   QByteArray mInReplyToIdMD5;          ///< set only if we're doing threading
   QByteArray mReferencesIdMD5;         ///< set only if we're doing threading
