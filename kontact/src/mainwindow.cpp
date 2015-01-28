@@ -397,12 +397,13 @@ void MainWindow::paintAboutScreen( const QString &msg )
     content = content.arg( QString() );
   }
 
-  mIntroPart->setHtml(
-    content.arg( QFont().pointSize() + 2 ).
-    arg( i18nc( "@item:intext", "KDE Kontact" ) ).
-    arg( i18nc( "@item:intext", "Get Organized!" ) ).
-    arg( i18nc( "@item:intext", "The KDE Personal Information Management Suite" ) ).
-    arg( msg ) );
+  //FIXME: Disabled due to bug https://issues.kolab.org/show_bug.cgi?id=4168
+  // mIntroPart->setHtml(
+  //   content.arg( QFont().pointSize() + 2 ).
+  //   arg( i18nc( "@item:intext", "KDE Kontact" ) ).
+  //   arg( i18nc( "@item:intext", "Get Organized!" ) ).
+  //   arg( i18nc( "@item:intext", "The KDE Personal Information Management Suite" ) ).
+  //   arg( msg ) );
 }
 
 void MainWindow::initAboutScreen()
@@ -466,16 +467,17 @@ void MainWindow::setupActions()
   actionCollection()->addAction( QLatin1String("settings_configure_kontact"), action );
   connect( action, SIGNAL(triggered(bool)), SLOT(slotPreferences()) );
 
-  action =
-    new KAction( KIcon( QLatin1String("kontact") ),
-                 i18nc( "@action:inmenu", "&Kontact Introduction" ), this );
-  action->setHelpText(
-    i18nc( "@info:status", "Show the Kontact Introduction page" ) );
-  action->setWhatsThis(
-    i18nc( "@info:whatsthis",
-           "Choose this option to see the Kontact Introduction page." ) );
-  actionCollection()->addAction( QLatin1String("help_introduction"), action );
-  connect( action, SIGNAL(triggered(bool)), SLOT(slotShowIntroduction()) );
+  //FIXME: Disabled due to bug https://issues.kolab.org/show_bug.cgi?id=4168
+  // action =
+  //   new KAction( KIcon( QLatin1String("kontact") ),
+  //                i18nc( "@action:inmenu", "&Kontact Introduction" ), this );
+  // action->setHelpText(
+  //   i18nc( "@info:status", "Show the Kontact Introduction page" ) );
+  // action->setWhatsThis(
+  //   i18nc( "@info:whatsthis",
+  //          "Choose this option to see the Kontact Introduction page." ) );
+  // actionCollection()->addAction( QLatin1String("help_introduction"), action );
+  // connect( action, SIGNAL(triggered(bool)), SLOT(slotShowIntroduction()) );
 
   action =
     new KAction( KIcon( QLatin1String("ktip") ),
