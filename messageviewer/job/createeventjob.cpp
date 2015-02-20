@@ -38,7 +38,6 @@ CreateEventJob::CreateEventJob(const KCalCore::Event::Ptr &eventPtr, const Akona
 
 CreateEventJob::~CreateEventJob()
 {
-    qDebug()<<" CreateEventJob::~CreateEventJob()";
 }
 
 void CreateEventJob::start()
@@ -48,14 +47,6 @@ void CreateEventJob::start()
         Akonadi::ItemFetchJob *job = new Akonadi::ItemFetchJob( mItem );
         job->fetchScope().fetchFullPayload();
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotFetchDone(KJob*)) );
-
-        if ( job->exec() ) {
-            if ( job->items().count() == 1 ) {
-                mItem = job->items().first();
-            }
-        } else {
-            qDebug()<<" createEvent: Error during fetch: "<<job->errorString();
-        }
     } else {
         createEvent();
     }
@@ -63,7 +54,6 @@ void CreateEventJob::start()
 
 void CreateEventJob::slotFetchDone(KJob *job)
 {
-    qDebug()<<" void CreateEventJob::slotFetchDone(KJob *job)";
     Akonadi::ItemFetchJob *fetchJob = qobject_cast<Akonadi::ItemFetchJob *>(job);
     if ( fetchJob->items().count() == 1 ) {
         mItem = fetchJob->items().first();
