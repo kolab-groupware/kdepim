@@ -996,7 +996,7 @@ class UrlHandler : public Interface::BodyPartURLHandler
         }
       }
 
-      if ( status !=  Attendee::NeedsAction && ( ( myself && myself->RSVP() ) || heuristicalRSVP( incidence ) ) ) {
+      if ( status !=  Attendee::NeedsAction && ( ( myself && (myself->RSVP() || myself->status() == Attendee::NeedsAction)) || heuristicalRSVP( incidence ) ) ) {
         Attendee::Ptr newMyself = setStatusOnMyself( incidence, myself, status, receiver );
         if ( newMyself && status == Attendee::Delegated ) {
           newMyself->setDelegate( delegateString );
