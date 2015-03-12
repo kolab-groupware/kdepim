@@ -1163,15 +1163,32 @@ void Agenda::endItemAction()
 
   bool multiModify = false;
   // FIXME: do the cloning here...
-  const KCalCore::Incidence::Ptr incidence = d->mActionItem->incidence();
+  KCalCore::Incidence::Ptr incidence = d->mActionItem->incidence();
+  const KDateTime recurrenceId = d->mActionItem->occurrenceDateTime();
+
   d->mItemMoved = d->mItemMoved && !( d->mStartCell.x() == d->mEndCell.x() &&
                                       d->mStartCell.y() == d->mEndCell.y() );
 
   bool addIncidence = false;
   if ( d->mItemMoved ) {
     bool modify = false;
-    if ( incidence->recurs() ) {
-      const int res = d->mAgendaView->showMoveRecurDialog( d->mActionItem->incidence(), d->mActionItem->occurrenceDate() );
+
+    //get the main event and not the exception
+    if (incidence->hasRecurrenceId() && !incidence->recurs()) {
+      KCalCore::Incidence::Ptr mainIncidence;
+      KCalCore::Calendar::Ptr cal = d->mCalendar->findCalendar(incidence)->getCalendar();
+      if (CalendarSupport::hasEvent(incidence)) {
+        mainIncidence = cal->event(incidence->uid());
+      } else if (CalendarSupport::hasTodo(incidence)) {
+        mainIncidence =  cal->todo(incidence->uid());
+      }
+      incidence = mainIncidence;
+    }
+
+    Akonadi::Item item = d->mCalendar->item(incidence);
+
+    if ( incidence->recurs()) {
+      const int res = d->mAgendaView->showMoveRecurDialog( incidence, recurrenceId.date() );
       switch ( res ) {
       case KCalUtils::RecurrenceActions::AllOccurrences: // All occurrences
         // Moving the whole sequene of events is handled by the itemModified below.
@@ -1185,15 +1202,23 @@ void Agenda::endItemAction()
         multiModify = true;
         d->mChanger->startAtomicOperation( i18n( "Dissociate event from recurrence" ) );
         KCalCore::Incidence::Ptr newInc( KCalCore::Calendar::createException(
-          incidence, d->mActionItem->occurrenceDateTime(), thisAndFuture ) );
+          incidence, recurrenceId, thisAndFuture ) );
         if ( newInc ) {
+          newInc->removeCustomProperty("VOLATILE", "AKONADI-ID");
+          Akonadi::Item newItem = d->mCalendar->item(newInc);
+
+          if (newItem.isValid() && newItem != item ) {             //it is not a new exception
+            item = newItem;
+            newInc->setCustomProperty("VOLATILE", "AKONADI-ID", QString::number(newItem.id()));
+            addIncidence = false;
+          } else {
+            addIncidence = true;
+          }
           // don't recreate items, they already have the correct position
           d->mAgendaView->enableAgendaUpdate( false );
 
           d->mActionItem->setIncidence( newInc );
           d->mActionItem->dissociateFromMultiItem();
-
-          addIncidence = true;
 
           d->mAgendaView->enableAgendaUpdate( true );
         } else {
@@ -1216,6 +1241,17 @@ void Agenda::endItemAction()
     AgendaItem::QPtr placeItem = d->mActionItem->firstMultiItem();
     if ( !placeItem ) {
       placeItem = d->mActionItem;
+    }
+
+    Akonadi::Collection::Id saveCollection = -1;
+
+    if ( item.isValid()) {
+      saveCollection = item.parentCollection().id();
+
+      // if parent collection is only a search collection for example
+      if (!(item.parentCollection().rights() & Akonadi::Collection::CanCreateItem)) {
+          saveCollection = item.storageCollectionId();
+      }
     }
 
     if ( modify ) {
@@ -1242,9 +1278,8 @@ void Agenda::endItemAction()
       // calling when we move item.
       // Not perfect need to improve it!
       //mChanger->endChange( inc );
-      Akonadi::Item item = d->mCalendar->item(incidence);
       if (item.isValid()) {
-        d->mAgendaView->updateEventDates( modif, addIncidence, item.parentCollection().id() );
+        d->mAgendaView->updateEventDates( modif, addIncidence, saveCollection );
       }
       if ( addIncidence ) {
         // delete the one we dragged, there's a new one being added async, due to dissociation.
@@ -1253,9 +1288,8 @@ void Agenda::endItemAction()
     } else {
       // the item was moved, but not further modified, since it's not recurring
       // make sure the view updates anyhow, with the right item
-      Akonadi::Item item = d->mCalendar->item(incidence);
       if (item.isValid()) {
-        d->mAgendaView->updateEventDates( placeItem, addIncidence, item.parentCollection().id() );
+        d->mAgendaView->updateEventDates( placeItem, addIncidence, saveCollection );
       }
     }
   }

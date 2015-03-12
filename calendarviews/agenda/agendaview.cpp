@@ -1473,14 +1473,12 @@ void AgendaView::updateEventDates( AgendaItem *item, bool addIncidence,
   int daysLength = 0;
   //  startDt.setDate( startDate );
 
-  Akonadi::Item aitem = d->mViewCalendar->item(item->incidence());
-  KCalCore::Incidence::Ptr incidence = CalendarSupport::incidence( aitem );
-  if ( !aitem.isValid() || !incidence || !changer() ) {
+  KCalCore::Incidence::Ptr incidence = item->incidence();
+  Akonadi::Item aitem = d->mViewCalendar->item(incidence);
+  if ( (!aitem.isValid() && !addIncidence) || !incidence || !changer() ) {
     kWarning() << "changer is " << changer() << " and incidence is " << incidence.data();
     return;
   }
-
-  KCalCore::Incidence::Ptr oldIncidence( incidence->clone() );
 
   QTime startTime( 0, 0, 0 ), endTime( 0, 0, 0 );
   if ( incidence->allDay() ) {
@@ -1575,14 +1573,18 @@ void AgendaView::updateEventDates( AgendaItem *item, bool addIncidence,
     }
     td->setDtDue( endDt.toTimeSpec( td->dtDue().timeSpec() ) );
   }
-  item->setOccurrenceDateTime( startDt );
+
+  if (!incidence->hasRecurrenceId()) {
+      item->setOccurrenceDateTime( startDt );
+  }
 
   bool result;
   if ( addIncidence ) {
     Akonadi::Collection collection = calendar()->collection( collectionId );
-    kDebug() << "Collection isValid() = " << collection.isValid();
     result = changer()->createIncidence( incidence, collection, this ) != -1;
   } else {
+    KCalCore::Incidence::Ptr oldIncidence( CalendarSupport::incidence(aitem) );
+    aitem.setPayload<KCalCore::Incidence::Ptr>(incidence);
     result = changer()->modifyIncidence( aitem, oldIncidence, this ) != -1;
   }
 
