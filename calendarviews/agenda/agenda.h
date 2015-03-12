@@ -121,13 +121,13 @@ class EVENTVIEWS_EXPORT Agenda : public QWidget
 
     void setStartTime( const QTime &startHour );
 
-    AgendaItem::QPtr insertItem ( const KCalCore::Incidence::Ptr &incidence, const KDateTime &occurrenceDateTime, int X, int YTop,
+    AgendaItem::QPtr insertItem ( const KCalCore::Incidence::Ptr &incidence, const KDateTime &recurrenceId, int X, int YTop,
                                   int YBottom, int itemPos, int itemCount, bool isSelected );
 
-    AgendaItem::QPtr insertAllDayItem ( const KCalCore::Incidence::Ptr &event, const KDateTime &occurrenceDateTime, int XBegin,
+    AgendaItem::QPtr insertAllDayItem ( const KCalCore::Incidence::Ptr &event, const KDateTime &recurrenceId, int XBegin,
                                         int XEnd, bool isSelected );
 
-    void insertMultiItem ( const KCalCore::Incidence::Ptr &event, const KDateTime &occurrenceDateTime, int XBegin, int XEnd,
+    void insertMultiItem ( const KCalCore::Incidence::Ptr &event, const KDateTime &recurrenceId, int XBegin, int XEnd,
                            int YTop, int YBottom, bool isSelected );
 
     /**
@@ -235,7 +235,7 @@ class EVENTVIEWS_EXPORT Agenda : public QWidget
     };
 
     AgendaItem::QPtr createAgendaItem( const KCalCore::Incidence::Ptr &item, int itemPos,
-                                       int itemCount, const KDateTime &qd, bool isSelected );
+                                       int itemCount, const KDateTime &recurrentId, bool isSelected );
 
   protected:
     /**

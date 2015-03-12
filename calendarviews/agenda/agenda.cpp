@@ -1696,7 +1696,7 @@ void Agenda::setStartTime( const QTime &startHour )
 /*
   Insert AgendaItem into agenda.
 */
-AgendaItem::QPtr Agenda::insertItem( const KCalCore::Incidence::Ptr &incidence, const KDateTime &qd,
+AgendaItem::QPtr Agenda::insertItem( const KCalCore::Incidence::Ptr &incidence, const KDateTime &recurrenceId,
                                      int X, int YTop, int YBottom, int itemPos, int itemCount,
                                      bool isSelected )
 {
@@ -1707,7 +1707,7 @@ AgendaItem::QPtr Agenda::insertItem( const KCalCore::Incidence::Ptr &incidence, 
 
   d->mActionType = NOP;
 
-  AgendaItem::QPtr agendaItem = createAgendaItem( incidence, itemPos, itemCount, qd, isSelected );
+  AgendaItem::QPtr agendaItem = createAgendaItem( incidence, itemPos, itemCount, recurrenceId, isSelected );
   if ( !agendaItem ) {
     return AgendaItem::QPtr();
   }
@@ -1742,7 +1742,7 @@ AgendaItem::QPtr Agenda::insertItem( const KCalCore::Incidence::Ptr &incidence, 
 /*
   Insert all-day AgendaItem into agenda.
 */
-AgendaItem::QPtr Agenda::insertAllDayItem( const KCalCore::Incidence::Ptr &incidence, const KDateTime &occurrenceDateTime,
+AgendaItem::QPtr Agenda::insertAllDayItem( const KCalCore::Incidence::Ptr &incidence, const KDateTime &recurrenceId,
                                            int XBegin, int XEnd, bool isSelected )
 {
   if ( !d->mAllDayMode ) {
@@ -1752,7 +1752,7 @@ AgendaItem::QPtr Agenda::insertAllDayItem( const KCalCore::Incidence::Ptr &incid
 
   d->mActionType = NOP;
 
-  AgendaItem::QPtr agendaItem = createAgendaItem( incidence, 1, 1, occurrenceDateTime, isSelected );
+  AgendaItem::QPtr agendaItem = createAgendaItem( incidence, 1, 1, recurrenceId, isSelected );
   if ( !agendaItem ) {
     return AgendaItem::QPtr();
   }
@@ -1779,7 +1779,7 @@ AgendaItem::QPtr Agenda::insertAllDayItem( const KCalCore::Incidence::Ptr &incid
 }
 
 AgendaItem::QPtr Agenda::createAgendaItem( const KCalCore::Incidence::Ptr &incidence, int itemPos,
-                                           int itemCount, const KDateTime &qd, bool isSelected )
+                                           int itemCount, const KDateTime &recurrenceId, bool isSelected )
 {
   if ( !incidence ) {
     kWarning() << "Agenda::createAgendaItem() item is invalid.";
@@ -1787,7 +1787,7 @@ AgendaItem::QPtr Agenda::createAgendaItem( const KCalCore::Incidence::Ptr &incid
   }
 
   AgendaItem::QPtr agendaItem = new AgendaItem( d->mAgendaView, d->mCalendar, incidence,
-                                                itemPos, itemCount, qd, isSelected, this );
+                                                itemPos, itemCount, recurrenceId, isSelected, this );
 
   connect( agendaItem, SIGNAL(removeAgendaItem(AgendaItem::QPtr)), SLOT(removeAgendaItem(AgendaItem::QPtr)) );
   connect( agendaItem, SIGNAL(showAgendaItem(AgendaItem::QPtr)), SLOT(showAgendaItem(AgendaItem::QPtr)) );
@@ -1797,7 +1797,7 @@ AgendaItem::QPtr Agenda::createAgendaItem( const KCalCore::Incidence::Ptr &incid
   return agendaItem;
 }
 
-void Agenda::insertMultiItem( const KCalCore::Incidence::Ptr &event, const KDateTime &occurrenceDateTime, int XBegin,
+void Agenda::insertMultiItem( const KCalCore::Incidence::Ptr &event, const KDateTime &recurrenceId, int XBegin,
                               int XEnd, int YTop, int YBottom, bool isSelected )
 {
   KCalCore::Event::Ptr ev = CalendarSupport::event( event );
@@ -1832,7 +1832,7 @@ void Agenda::insertMultiItem( const KCalCore::Incidence::Ptr &event, const KDate
       newtext = QString::fromLatin1( "(%1/%2): " ).arg( count ).arg( width );
       newtext.append( ev->summary() );
 
-      current = insertItem( event, occurrenceDateTime, cellX, cellYTop, cellYBottom, count, width, isSelected );
+      current = insertItem( event, recurrenceId, cellX, cellYTop, cellYBottom, count, width, isSelected );
       Q_ASSERT( current );
       current->setText( newtext );
       multiItems.append( current );

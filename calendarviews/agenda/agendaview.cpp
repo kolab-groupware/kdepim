@@ -274,7 +274,7 @@ class AgendaView::Private : public Akonadi::ETMCalendar::CalendarObserver
     AgendaItem::List agendaItems( const QString &uid ) const;
 
     // insertAtDateTime is in the view's timezone
-    void insertIncidence( const KCalCore::Incidence::Ptr &,
+    void insertIncidence( const KCalCore::Incidence::Ptr &, const KDateTime &recurrenceId,
                           const KDateTime &insertAtDateTime, bool createSelected );
     void reevaluateIncidence( const KCalCore::Incidence::Ptr &incidence );
 
@@ -531,7 +531,7 @@ void AgendaView::Private::clearView()
 }
 
 void AgendaView::Private::insertIncidence( const KCalCore::Incidence::Ptr &incidence,
-                                           const KDateTime &insertAtDateTime,
+                                           const KDateTime &recurrenceId, const KDateTime &insertAtDateTime,
                                            bool createSelected )
 {
   if ( !q->filterByCollectionSelection( incidence ) ) {
@@ -588,10 +588,10 @@ void AgendaView::Private::insertIncidence( const KCalCore::Incidence::Ptr &incid
   const KDateTime::Spec timeSpec = q->preferences()->timeSpec();
   const QDate today = KDateTime::currentDateTime( timeSpec ).date();
   if ( todo && todo->isOverdue() && today >= insertAtDate ) {
-    mAllDayAgenda->insertAllDayItem( incidence, insertAtDateTime, curCol, curCol,
+    mAllDayAgenda->insertAllDayItem( incidence, recurrenceId, curCol, curCol,
                                      createSelected );
   } else if ( incidence->allDay() ) {
-    mAllDayAgenda->insertAllDayItem( incidence, insertAtDateTime, beginX, endX,
+    mAllDayAgenda->insertAllDayItem( incidence, recurrenceId, beginX, endX,
                                      createSelected );
   } else if ( event && event->isMultiDay( timeSpec ) ) {
     // TODO: We need a better isMultiDay(), one that receives the occurrence.
@@ -612,7 +612,7 @@ void AgendaView::Private::insertIncidence( const KCalCore::Incidence::Ptr &incid
     }
     const int endY = mAgenda->timeToY( endTime ) - 1;
     if ( ( beginX <= 0 && curCol == 0 ) || beginX == curCol ) {
-      mAgenda->insertMultiItem( incidence, insertAtDateTime, beginX, endX, startY, endY,
+      mAgenda->insertMultiItem( incidence, recurrenceId, beginX, endX, startY, endY,
                                 createSelected );
     }
     if ( beginX == curCol ) {
@@ -683,7 +683,7 @@ void AgendaView::Private::insertIncidence( const KCalCore::Incidence::Ptr &incid
     if ( endY < startY ) {
       endY = startY;
     }
-    mAgenda->insertItem( incidence, insertAtDateTime, curCol, startY, endY, 1, 1,
+    mAgenda->insertItem( incidence, recurrenceId, curCol, startY, endY, 1, 1,
                          createSelected );
     if ( startY < mMinY[curCol] ) {
       mMinY[curCol] = startY;
@@ -1831,17 +1831,10 @@ bool AgendaView::displayIncidence( const  KCalCore::Incidence::Ptr &incidence, b
         busyEvents.append( event );
       }
 
-      const Akonadi::Item item = calendar()->item( rIt.incidence() );
-      if ( !item.isValid() ) {
-        kWarning() << "Couldn't find item for "
-                   << rIt.incidence()->uid() << rIt.incidence()->recurrenceId().toString();
-        continue;
-      }
-      Q_ASSERT( item.hasPayload() );
       if ( occurrenceDate.date() == today ) {
         alreadyAddedToday = true;
       }
-      d->insertIncidence( incidence, occurrenceDate, createSelected );
+      d->insertIncidence( rIt.incidence(), rIt.recurrenceId(), occurrenceDate, createSelected );
     }
 
   } else {
@@ -1896,7 +1889,7 @@ bool AgendaView::displayIncidence( const  KCalCore::Incidence::Ptr &incidence, b
       busyEvents.append( event );
     }
 
-    d->insertIncidence( incidence, t->toTimeSpec( timeSpec ), createSelected );
+    d->insertIncidence( incidence, t->toTimeSpec( timeSpec ), t->toTimeSpec( timeSpec ), createSelected );
   }
 
   // Can be multiday
