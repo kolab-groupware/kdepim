@@ -1923,8 +1923,13 @@ void Agenda::removeIncidence( const KCalCore::Incidence::Ptr &incidence )
     return;
   }
   foreach ( const AgendaItem::QPtr &agendaItem, agendaItems ) {
-    if ( agendaItem && !removeAgendaItem( agendaItem ) ) {
-      kWarning() << "Agenda::removeIncidence() Failed to remove " << incidence->uid();
+    if (agendaItem) {
+      if (incidence->instanceIdentifier() != agendaItem->incidence()->instanceIdentifier() ) {
+        continue;
+      }
+      if ( !removeAgendaItem( agendaItem ) ) {
+        kWarning() << "Agenda::removeIncidence() Failed to remove " << incidence->uid();
+      }
     }
   }
 }

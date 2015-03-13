@@ -479,10 +479,10 @@ void AgendaView::Private::calendarIncidenceDeleted( const KCalCore::Incidence::P
   if ( incidence->hasRecurrenceId()) {
     // Reevaluate the main event, if it exists. The exception was removed so the main recurrent series
     // will no be bigger.
-    if ( mViewCalendar->isValid(incidence) ) {
-      KCalCore::Incidence::Ptr mainIncidence = q->calendar2(incidence)->incidence( incidence->uid() );
+    if ( mViewCalendar->isValid(incidence->uid()) ) {
+      KCalCore::Incidence::Ptr mainIncidence = q->calendar2(incidence->uid())->incidence( incidence->uid() );
       if ( mainIncidence ) {
-        reevaluateIncidence( mainIncidence  );
+        reevaluateIncidence( mainIncidence );
       }
     }
   } else if ( mightBeVisible( incidence ) ) {
@@ -847,6 +847,10 @@ KCalCore::Calendar::Ptr AgendaView::calendar2(KCalCore::Incidence::Ptr incidence
   return d->mViewCalendar->findCalendar(incidence)->getCalendar();
 }
 
+KCalCore::Calendar::Ptr AgendaView::calendar2(const QString &incidenceIdentifier) const
+{
+  return d->mViewCalendar->findCalendar(incidenceIdentifier)->getCalendar();
+}
 
 void AgendaView::setCalendar( const Akonadi::ETMCalendar::Ptr &cal )
 {
@@ -2176,8 +2180,10 @@ void AgendaView::removeIncidence( const KCalCore::Incidence::Ptr &incidence )
   d->mAllDayAgenda->removeIncidence( incidence );
   d->mAgenda->removeIncidence( incidence );
 
-  if ( !incidence->hasRecurrenceId() && d->mViewCalendar->isValid(incidence)) {
-    KCalCore::Incidence::List exceptions = calendar2(incidence)->instances( incidence );
+  if (!incidence->hasRecurrenceId() && d->mViewCalendar->isValid(incidence->uid())) {
+    // Deleted incidence is an main incidence
+    // Delete all exceptions as well
+    KCalCore::Incidence::List exceptions = calendar2(incidence->uid())->instances( incidence );
     foreach ( const KCalCore::Incidence::Ptr &exception, exceptions ) {
       if ( exception->allDay() ) {
         d->mAllDayAgenda->removeIncidence( exception );

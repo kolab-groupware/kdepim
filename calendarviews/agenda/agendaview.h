@@ -161,6 +161,7 @@ class EVENTVIEWS_EXPORT AgendaView : public EventView
      * TODO: replace EventsView::calendar()
      */
     virtual KCalCore::Calendar::Ptr calendar2(KCalCore::Incidence::Ptr incidence) const;
+    virtual KCalCore::Calendar::Ptr calendar2(const QString &incidenceIdentifier) const;
 
   public slots:
     virtual void updateView();
