@@ -844,7 +844,7 @@ void AgendaItem::paintEvent( QPaintEvent *ev )
       todo->dtDue().toTimeSpec( CalendarSupport::KCalPrefs::instance()->timeSpec() ).date();
     const QDate today =
       KDateTime::currentDateTime( CalendarSupport::KCalPrefs::instance()->timeSpec() ).date();
-    const QDate occurrenceDate = mOccurrenceDateTime.toTimeSpec( CalendarSupport::KCalPrefs::instance()->timeSpec() ).date();
+    const QDate occurrenceDate = this->occurrenceDate();
     if ( todo->isOverdue() && today >= occurrenceDate ) {
       bgColor = mEventView->preferences()->todoOverdueColor();
     } else if ( dueDate == today && dueDate == occurrenceDate ) {
@@ -1362,7 +1362,7 @@ bool AgendaItem::event( QEvent *event )
         KCalUtils::IncidenceFormatter::toolTipStr(
           mCalendar->displayName(mIncidence),
           mIncidence,
-          mOccurrenceDateTime.toTimeSpec( mEventView->preferences()->timeSpec() ).date(), true, mEventView->preferences()->timeSpec() ),
+          occurrenceDate(), true, mEventView->preferences()->timeSpec() ),
         this );
     }
   }
