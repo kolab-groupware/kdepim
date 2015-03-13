@@ -42,6 +42,7 @@ public:
 
   virtual ~ViewCalendar();
   virtual bool isValid(const KCalCore::Incidence::Ptr &incidence) const=0;
+  virtual bool isValid(const QString &incidenceIdentifier) const=0;
   virtual QString displayName(const KCalCore::Incidence::Ptr &incidence) const=0;
 
   virtual QColor resourceColor(const KCalCore::Incidence::Ptr &incidence) const=0;
@@ -57,6 +58,7 @@ public:
 
     virtual ~AkonadiViewCalendar();
     virtual bool isValid(const KCalCore::Incidence::Ptr &incidence) const;
+    virtual bool isValid(const QString &incidenceIdentifier) const;
     virtual QString displayName(const KCalCore::Incidence::Ptr &incidence) const;
 
     virtual QColor resourceColor(const KCalCore::Incidence::Ptr &incidence) const;
@@ -78,7 +80,9 @@ public:
 
     virtual ~MultiViewCalendar();
     ViewCalendar::Ptr findCalendar(const KCalCore::Incidence::Ptr &incidence) const;
+    ViewCalendar::Ptr findCalendar(const QString &incidenceIdentifier) const;
     virtual bool isValid(const KCalCore::Incidence::Ptr &incidence) const;
+    virtual bool isValid(const QString &incidenceIdentifier) const;
     virtual QString displayName(const KCalCore::Incidence::Ptr &incidence) const;
 
     virtual QColor resourceColor(const KCalCore::Incidence::Ptr &incidence) const;

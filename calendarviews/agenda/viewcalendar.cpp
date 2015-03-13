@@ -46,6 +46,16 @@ ViewCalendar::Ptr MultiViewCalendar::findCalendar(const KCalCore::Incidence::Ptr
     return ViewCalendar::Ptr();
 }
 
+ViewCalendar::Ptr MultiViewCalendar::findCalendar(const QString &incidenceIdentifier) const
+{
+    foreach(const ViewCalendar::Ptr &cal, mSubCalendars) {
+        if (cal->isValid(incidenceIdentifier)) {
+            return cal;
+        }
+    }
+    return ViewCalendar::Ptr();
+}
+
 void MultiViewCalendar::addCalendar(const ViewCalendar::Ptr &calendar)
 {
     if (!mSubCalendars.contains(calendar)) {
@@ -87,6 +97,13 @@ bool MultiViewCalendar::isValid(const KCalCore::Incidence::Ptr &incidence) const
     return cal;
 }
 
+bool MultiViewCalendar::isValid(const QString &incidenceIdentifier) const
+{
+    ViewCalendar::Ptr cal = findCalendar(incidenceIdentifier);
+    return cal;
+}
+
+
 QColor MultiViewCalendar::resourceColor(const KCalCore::Incidence::Ptr &incidence) const
 {
     ViewCalendar::Ptr cal = findCalendar(incidence);
@@ -121,9 +138,19 @@ bool AkonadiViewCalendar::isValid(const KCalCore::Incidence::Ptr &incidence) con
     return false;
 }
 
-Akonadi::Item AkonadiViewCalendar::item(const KCalCore::Incidence::Ptr &incidence) const
+bool AkonadiViewCalendar::isValid(const QString &incidenceIdentifier) const
 {
     if (!mCalendar) {
+        return false;
+    }
+
+    return !mCalendar->incidence(incidenceIdentifier).isNull();
+}
+
+
+Akonadi::Item AkonadiViewCalendar::item(const KCalCore::Incidence::Ptr &incidence) const
+{
+    if (!mCalendar || !incidence) {
         return Akonadi::Item();
     }
     bool ok = false;
