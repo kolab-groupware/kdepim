@@ -129,16 +129,17 @@ void VacationPageWidget::slotGetResult(const QString &serverName, const QStringL
     QString domainName = VacationUtils::defaultDomainName();
     QDate startDate = VacationUtils::defaultStartDate();
     QDate endDate = VacationUtils::defaultEndDate();
+    bool scriptActive = true;
 
-    const bool bParse = KSieveUi::VacationUtils::parseScript(script, messageText, subject, notificationInterval, aliases, sendForSpam, domainName, startDate, endDate);
+    const bool bParse = KSieveUi::VacationUtils::parseScript(script, scriptActive, messageText, subject, notificationInterval, aliases, sendForSpam, domainName, startDate, endDate);
 
     if (!bParse) {
         mVacationWarningWidget->setVisible(true);
     }
 
-    mWasActive = active;
+    mWasActive = active && scriptActive;
     mVacationEditWidget->setEnabled(true);
-    mVacationEditWidget->setActivateVacation( active );
+    mVacationEditWidget->setActivateVacation( active && scriptActive );
     mVacationEditWidget->setMessageText( messageText );
     mVacationEditWidget->setSubject( subject );
     mVacationEditWidget->setNotificationInterval( notificationInterval );
