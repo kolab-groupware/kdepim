@@ -98,13 +98,14 @@ QDate KSieveUi::VacationUtils::defaultEndDate()
 }
 
 
-bool KSieveUi::VacationUtils::parseScript( const QString &script, QString &messageText,
+bool KSieveUi::VacationUtils::parseScript( const QString &script, bool &active, QString &messageText,
                             QString &subject,
                             int & notificationInterval, QStringList &aliases,
                             bool & sendForSpam, QString &domainName,
                             QDate & startDate, QDate & endDate )
 {
     if ( script.trimmed().isEmpty() ) {
+        active = false;
         messageText = VacationUtils::defaultMessageText();
         subject = VacationUtils::defaultSubject();
         notificationInterval = VacationUtils::defaultNotificationInterval();
@@ -125,20 +126,33 @@ bool KSieveUi::VacationUtils::parseScript( const QString &script, QString &messa
     SpamDataExtractor sdx;
     DomainRestrictionDataExtractor drdx;
     DateExtractor dx;
-    KSieveExt::MultiScriptBuilder tsb( &vdx, &sdx, &drdx, &dx );
+    KSieveExt::MultiScriptBuilder tsb( &vdx , &sdx, &drdx, &dx );
     parser.setScriptBuilder( &tsb );
-    if ( !parser.parse() )
+    if ( !parser.parse() || !vdx.commandFound() ) {
+        active = false;
         return false;
+    }
+    active = vdx.active();
     messageText = vdx.messageText().trimmed();
     if (!vdx.subject().isEmpty()) {
         subject = vdx.subject().trimmed();
     }
     notificationInterval = vdx.notificationInterval();
     aliases = vdx.aliases();
-    if ( !VacationSettings::allowOutOfOfficeUploadButNoSettings() ) {
-        sendForSpam = !sdx.found();
-        domainName = drdx.domainName();
+
+    if (!active && !vdx.ifComment().isEmpty()) {
+        const QByteArray newScript = QString::fromAscii("if ").toUtf8() + vdx.ifComment().toUtf8() + QString::fromLatin1("{vacation;}").toUtf8();
+        tsb = KSieveExt::MultiScriptBuilder( &sdx, &drdx, &dx );
+        KSieve::Parser parser( newScript.begin(),
+                           newScript.begin() + newScript.length() );
+        parser.setScriptBuilder( &tsb );
+        if ( !parser.parse() ) {
+            return false;
+        }
     }
+
+    sendForSpam = !sdx.found();
+    domainName = drdx.domainName();
     startDate = dx.startDate();
     endDate = dx.endDate();
     return true;
@@ -156,12 +170,8 @@ bool KSieveUi::VacationUtils::foundVacationScript(const QString &script)
     KSieve::Parser parser( scriptUTF8.begin(),
                            scriptUTF8.begin() + scriptUTF8.length() );
     VacationDataExtractor vdx;
-    SpamDataExtractor sdx;
-    DomainRestrictionDataExtractor drdx;
-    DateExtractor dx;
-    KSieveExt::MultiScriptBuilder tsb( &vdx, &sdx, &drdx, &dx );
-    parser.setScriptBuilder( &tsb );
-    return parser.parse();
+    parser.setScriptBuilder(&vdx);
+    return parser.parse() && vdx.commandFound();
 }
 
 QString KSieveUi::VacationUtils::composeScript( const QString & messageText,

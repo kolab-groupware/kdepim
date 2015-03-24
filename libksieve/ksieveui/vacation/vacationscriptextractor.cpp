@@ -22,6 +22,9 @@ VacationDataExtractor::VacationDataExtractor()
     : KSieve::ScriptBuilder(),
       mContext( None ),
       mNotificationInterval( 0 )
+    , mActive(true)
+    , mInIfBlock(false)
+    , mBlockLevel(0)
 {
     kDebug();
 }
@@ -33,6 +36,9 @@ VacationDataExtractor::~VacationDataExtractor()
 
 void VacationDataExtractor::commandStart( const QString & identifier ) {
     kDebug() << "( \"" << identifier <<"\" )";
+    if (identifier == QLatin1String("if") && mContext == None) {
+        mContext = IfBlock;
+    }
     if ( identifier != QLatin1String("vacation") )
         return;
     reset();
@@ -41,7 +47,9 @@ void VacationDataExtractor::commandStart( const QString & identifier ) {
 
 void VacationDataExtractor::commandEnd() {
     kDebug();
-    mContext = None;
+    if ( mContext != None && mContext != IfBlock ) {
+        mContext = VacationEnd;
+    }
 }
 
 void VacationDataExtractor::error( const KSieve::Error & e )
@@ -52,6 +60,43 @@ void VacationDataExtractor::error( const KSieve::Error & e )
 void VacationDataExtractor::finished()
 {
 
+}
+
+void VacationDataExtractor::testStart(const QString &test)
+{
+    if (mContext == IfBlock) {
+        if (test ==  QLatin1String("true") || test ==  QLatin1String("false")) {
+            mActive = (test == QLatin1String("true"));
+            mIfComment = QString();
+            kDebug() << "set active level to" << mActive;
+        }
+    }
+}
+
+void VacationDataExtractor::hashComment(const QString &comment)
+{
+    if (mContext == IfBlock) {
+        mIfComment += comment;
+    }
+}
+
+
+void VacationDataExtractor::blockStart()
+{
+    if (mContext == IfBlock) {
+        mContext = None;
+    }
+    mBlockLevel++;
+}
+
+void VacationDataExtractor::blockEnd()
+{
+    mBlockLevel--;
+    if(mBlockLevel == 0 && !commandFound()) {       //We are in main level again, and didn't found vacation in block
+        mActive = true;
+        mIfComment = QString();
+        kDebug() << "Reset active level";
+    }
 }
 
 void VacationDataExtractor::taggedArgument( const QString & tag )

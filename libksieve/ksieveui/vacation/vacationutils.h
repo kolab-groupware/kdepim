@@ -45,7 +45,7 @@ QString composeScript( const QString & messageText, const QString &subject,
                        const KMime::Types::AddrSpecList & aliases,
                        bool sendForSpam, const QString & excludeDomain,
                        const QDate & startDate, const QDate & endDate );
-bool parseScript( const QString & script, QString & messageText,
+bool parseScript( const QString & script, bool &active, QString & messageText,
                   QString &subject,
                   int & notificationInterval, QStringList & aliases,
                   bool & sendForSpam, QString & domainName,
