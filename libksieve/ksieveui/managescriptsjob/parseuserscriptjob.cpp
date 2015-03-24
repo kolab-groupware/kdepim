@@ -85,7 +85,6 @@ void ParseUserScriptJob::emitSuccess(const QStringList &activeScriptList)
     emit finished(this);
 }
 
-
 QStringList ParseUserScriptJob::parsescript(const QString &script, bool &result)
 {
     QStringList lst;
