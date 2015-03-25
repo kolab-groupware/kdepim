@@ -41,7 +41,11 @@ public:
     void setServerUrl(const KUrl &url);
     void setScript(const QString &script);
     void setServerName(const QString &servername);
+    const QString &serverName() const;
     void setStatus(bool activate, bool wasActive);
+    void setKep14Support(bool kep14Support);
+    QString updateVacationBlock(QString oldScript, QString mScript);
+    QString mergeRequireLine(QString oldScript, QString mScript);
 
 Q_SIGNALS:
     void result(bool);
@@ -50,6 +54,7 @@ Q_SIGNALS:
 private slots:
     void slotPutActiveResult(KManageSieve::SieveJob *job, bool success);
     void slotPutInactiveResult(KManageSieve::SieveJob *job, bool success);
+    void slotGetScript(KManageSieve::SieveJob *job, bool success, const QString &oldScript, bool active);
 
 private:
     void handlePutResult(KManageSieve::SieveJob *, bool success, bool activated);
@@ -58,6 +63,7 @@ private:
     QString mServerName;
     bool mActivate;
     bool mWasActive;
+    bool mKep14Support;
     KManageSieve::SieveJob *mSieveJob;
 };
 }

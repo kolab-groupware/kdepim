@@ -25,6 +25,8 @@ VacationDataExtractor::VacationDataExtractor()
     , mActive(true)
     , mInIfBlock(false)
     , mBlockLevel(0)
+    , mLineStart(0)
+    , mLineEnd(0)
 {
     kDebug();
 }
@@ -34,21 +36,28 @@ VacationDataExtractor::~VacationDataExtractor()
 
 }
 
-void VacationDataExtractor::commandStart( const QString & identifier ) {
+void VacationDataExtractor::commandStart( const QString & identifier, int lineNumber ) {
     kDebug() << "( \"" << identifier <<"\" )";
     if (identifier == QLatin1String("if") && mContext == None) {
         mContext = IfBlock;
+        mLineStart = lineNumber;
+        mInIfBlock = true;
     }
     if ( identifier != QLatin1String("vacation") )
         return;
+
+    if (mContext != IfBlock) {
+        mLineStart = lineNumber;
+    }
+
     reset();
     mContext = VacationCommand;
 }
 
-void VacationDataExtractor::commandEnd() {
-    kDebug();
-    if ( mContext != None && mContext != IfBlock ) {
+void VacationDataExtractor::commandEnd(int lineNumber) {
+    if ( mContext != None && mContext != IfBlock  && mContext != VacationEnd) {
         mContext = VacationEnd;
+        mLineEnd = lineNumber;
     }
 }
 
@@ -81,21 +90,20 @@ void VacationDataExtractor::hashComment(const QString &comment)
 }
 
 
-void VacationDataExtractor::blockStart()
+void VacationDataExtractor::blockStart(int lineNumber)
 {
-    if (mContext == IfBlock) {
-        mContext = None;
-    }
     mBlockLevel++;
 }
 
-void VacationDataExtractor::blockEnd()
+void VacationDataExtractor::blockEnd(int lineNumber)
 {
     mBlockLevel--;
     if(mBlockLevel == 0 && !commandFound()) {       //We are in main level again, and didn't found vacation in block
         mActive = true;
         mIfComment = QString();
-        kDebug() << "Reset active level";
+    } else if (mInIfBlock && mBlockLevel == 0 && commandFound()) {
+        mLineEnd = lineNumber;
+        mInIfBlock = false;
     }
 }
 
@@ -167,4 +175,54 @@ void VacationDataExtractor::reset()
     mNotificationInterval = 0;
     mAliases.clear();
     mMessageText.clear();
+}
+
+RequireExtractor::RequireExtractor()
+    : KSieve::ScriptBuilder()
+    , mContext( None )
+    , mLineStart(0)
+    , mLineEnd(0)
+{
+
+}
+
+RequireExtractor::~RequireExtractor()
+{
+
+}
+
+void RequireExtractor::commandStart(const QString &identifier, int lineNumber)
+{
+    if (identifier == QLatin1String("require") && mContext == None) {
+        mContext = RequireCommand;
+        mLineStart = lineNumber;
+    }
+}
+
+void RequireExtractor::commandEnd(int lineNumber)
+{
+    if (mContext == RequireCommand) {
+        mContext = EndState;
+        mLineEnd = lineNumber;
+    }
+}
+
+void RequireExtractor::error(const KSieve::Error &e)
+{
+     kDebug() << e.asString() << "@" << e.line() << "," << e.column();
+}
+
+void RequireExtractor::finished()
+{
+
+}
+
+void RequireExtractor::stringArgument(const QString &string, bool, const QString &)
+{
+    mRequirements << string;
+}
+
+void RequireExtractor::stringListEntry(const QString &string, bool, const QString &)
+{
+    mRequirements << string;
 }

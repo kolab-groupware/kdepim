@@ -34,6 +34,8 @@ private Q_SLOTS:
     void testParseScriptComplex();
     void testWriteScript();
     void testWriteSimpleScript();
+    void testUpdateVacationBlock();
+    void testMergeRequireLine();
 };
 }
 #endif // VACATIONUTILSTEST_H

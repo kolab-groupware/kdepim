@@ -245,3 +245,59 @@ void VacationUtilsTest::testWriteSimpleScript()
     QCOMPARE(subjectA, subject);
     QCOMPARE(notificationIntervalA, notificationInterval);
 }
+
+void VacationUtilsTest::testUpdateVacationBlock()
+{
+    QFile fileA(QLatin1String(VACATIONTESTDATADIR "vacation-simple.siv"));
+    QVERIFY(fileA.open(QIODevice::ReadOnly));
+    QString scriptA = QString::fromUtf8(fileA.readAll());
+
+    QFile fileB(QLatin1String(VACATIONTESTDATADIR "vacation-deactivate.siv"));
+    QVERIFY(fileB.open(QIODevice::ReadOnly));
+    QString scriptB = QString::fromUtf8(fileB.readAll());
+
+    const QString attend = QLatin1String("if true\n{\ntestcmd;\n}\n");
+    const QString require = QLatin1String("require [\"date\", \"test\"];");
+    const QString scriptAattend = scriptA + QLatin1String("\n") + attend;
+    const QString scriptBattend = scriptB + QLatin1String("\n") + attend;
+
+    QStringList linesA = scriptA.split(QLatin1Char('\n'));
+    QStringList header;
+    for(int i=0; i<5;i++ ){
+        header.append(linesA.at(i));
+    }
+
+    QStringList vacation;
+    for(int i=5; i<linesA.count(); i++ ){
+        vacation.append(linesA.at(i));
+    }
+
+    QCOMPARE(VacationUtils::updateVacationBlock(scriptA, QString()), scriptA);
+    QCOMPARE(VacationUtils::updateVacationBlock(QString(), scriptB), scriptB);
+    QCOMPARE(VacationUtils::updateVacationBlock(scriptA, scriptB), scriptB);
+    QCOMPARE(VacationUtils::updateVacationBlock(scriptB, scriptA), scriptA);
+    QCOMPARE(VacationUtils::updateVacationBlock(scriptAattend, scriptB), scriptBattend);
+    QCOMPARE(VacationUtils::updateVacationBlock(scriptBattend, scriptA), scriptAattend);
+    QCOMPARE(VacationUtils::updateVacationBlock(scriptA, attend), header.join(QLatin1String("\n")));
+    QStringList output = vacation;
+    output << attend;
+    QCOMPARE(VacationUtils::updateVacationBlock(attend, scriptA), output.join(QLatin1String("\n")));
+    output.insert(0,require);
+    QCOMPARE(VacationUtils::updateVacationBlock(require+ QLatin1String("\n") + attend, scriptA), output.join(QLatin1String("\n")));
+}
+
+void VacationUtilsTest::testMergeRequireLine()
+{
+    QString sEmpty=QLatin1String("require;");
+    QString sOne=QLatin1String("require \"test\";");
+    QString sList1=QLatin1String("require [\"test\"];");
+    QString sList2=QLatin1String("require [\"test\", \"test2\"];");
+    QString sList3=QLatin1String("require [\"test3\",\n \"test4\"];\ntestcmd;");
+
+    QCOMPARE(VacationUtils::mergeRequireLine(sEmpty, sOne), sOne);
+    QCOMPARE(VacationUtils::mergeRequireLine(sOne, sEmpty), sOne);
+    QCOMPARE(VacationUtils::mergeRequireLine(sOne, sList1), sOne);
+    QCOMPARE(VacationUtils::mergeRequireLine(sOne, sList2), sList2);
+    QCOMPARE(VacationUtils::mergeRequireLine(sOne, sList3), QLatin1String("require [\"test\", \"test3\", \"test4\"];") );
+    QCOMPARE(VacationUtils::mergeRequireLine(sList3, sOne), QLatin1String("require [\"test\", \"test3\", \"test4\"];\ntestcmd;") );
+}

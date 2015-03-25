@@ -53,6 +53,10 @@ bool parseScript( const QString & script, bool &active, QString & messageText,
 
 bool foundVacationScript(const QString & script);
 
+QString mergeRequireLine(const QString &script1, const QString script2);
+
+QString updateVacationBlock(const QString &oldScript, const QString &newScript);
+
 }
 }
 

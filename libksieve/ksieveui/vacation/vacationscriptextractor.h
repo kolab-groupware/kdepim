@@ -80,14 +80,14 @@ private:
 #undef FOREACH
 #endif
 #define FOREACH for ( std::vector<KSieve::ScriptBuilder*>::const_iterator it = mBuilders.begin(), end = mBuilders.end() ; it != end ; ++it ) (*it)->
-    void commandStart( const QString & identifier ) { FOREACH commandStart( identifier ); }
-    void commandEnd() { FOREACH commandEnd(); }
+    void commandStart( const QString & identifier, int lineNumber ) { FOREACH commandStart( identifier, lineNumber ); }
+    void commandEnd(int lineNumber) { FOREACH commandEnd(lineNumber); }
     void testStart( const QString & identifier ) { FOREACH testStart( identifier ); }
     void testEnd() { FOREACH testEnd(); }
     void testListStart() { FOREACH testListStart(); }
     void testListEnd() { FOREACH testListEnd(); }
-    void blockStart() { FOREACH blockStart(); }
-    void blockEnd() { FOREACH blockEnd(); }
+    void blockStart(int lineNumber) { FOREACH blockStart(lineNumber); }
+    void blockEnd(int lineNumber) { FOREACH blockEnd(lineNumber); }
     void hashComment( const QString & comment ) { FOREACH hashComment( comment ); }
     void bracketComment( const QString & comment ) { FOREACH bracketComment( comment ); }
     void lineFeed() { FOREACH lineFeed(); }
@@ -143,9 +143,11 @@ public:
     unsigned int mState;
     int mNestingDepth;
 
+    int mLineNumber;
+
 public:
     GenericInformationExtractor( const std::vector<StateNode> & nodes )
-        : KSieve::ScriptBuilder(), mNodes( nodes ), mState( 0 ), mNestingDepth( 0 ) {}
+        : KSieve::ScriptBuilder(), mNodes( nodes ), mState( 0 ), mNestingDepth( 0 ), mLineNumber(0) {}
 
     const std::map<QString,QString> & results() const { return mResults; }
 
@@ -180,17 +182,17 @@ private:
             doProcess( method, string );
         }
     }
-    void commandStart( const QString & identifier ) { kDebug() << identifier ; process( CommandStart, identifier ); }
-    void commandEnd() { kDebug() ; process( CommandEnd ); }
+    void commandStart( const QString & identifier, int lineNumber ) { kDebug() << identifier ; process( CommandStart, identifier ); }
+    void commandEnd(int lineNumber) { kDebug() ; process( CommandEnd ); }
     void testStart( const QString & identifier ) { kDebug() << identifier ; process( TestStart, identifier ); }
     void testEnd() { kDebug() ; process( TestEnd ); }
     void testListStart() { kDebug() ; process( TestListStart ); }
     void testListEnd() { kDebug() ; process( TestListEnd ); }
-    void blockStart() { kDebug() ; process( BlockStart ); ++mNestingDepth; }
-    void blockEnd() { kDebug() ; --mNestingDepth; process( BlockEnd ); }
+    void blockStart(int lineNumber) { kDebug() ; process( BlockStart ); ++mNestingDepth; }
+    void blockEnd(int lineNumber) { kDebug() ; --mNestingDepth; process( BlockEnd ); }
     void hashComment( const QString & ) { kDebug() ; }
     void bracketComment( const QString & ) { kDebug() ; }
-    void lineFeed() { kDebug() ; }
+    void lineFeed() { kDebug() << ++mLineNumber; }
     void error( const KSieve::Error & ) {
         kDebug() ;
         mState = 0;
@@ -415,19 +417,22 @@ public:
         return mSubject;
     }
 
-private:
-    void commandStart( const QString & identifier );
+    int lineStart() const {return mLineStart;}
+    int lineEnd() const {return mLineEnd;}
 
-    void commandEnd();
+private:
+    void commandStart( const QString & identifier, int lineNumber );
+
+    void commandEnd(int lineNumber);
 
     void testStart( const QString &);
     void testEnd() {}
     void testListStart() {}
     void testListEnd() {}
-    void blockStart();
-    void blockEnd();
+    void blockStart(int lineNumber);
+    void blockEnd(int lineNumber);
     void hashComment( const QString & );
-    void bracketComment( const QString & ) {}
+    void bracketComment( const QString &c ) {}
     void lineFeed() {}
     void error( const KSieve::Error & e );
     void finished();
@@ -452,10 +457,61 @@ private:
     bool mInIfBlock;
     int mBlockLevel;
     QString mIfComment;
+    int mLineStart;
+    int mLineEnd;
 
     void reset();
 };
 
+class RequireExtractor : public KSieve::ScriptBuilder {
+    enum Context {
+        None = 0,
+        // command itself:
+        RequireCommand,
+        EndState
+    };
+public:
+    RequireExtractor();
+    virtual ~RequireExtractor();
+
+    bool commandFound() const { return mContext == EndState; }
+    const QStringList &requirements() const { return mRequirements; }
+
+    int lineStart() const {return mLineStart;}
+    int lineEnd() const {return mLineEnd;}
+
+private:
+    void commandStart( const QString & identifier, int lineNumber );
+
+    void commandEnd(int lineNumber);
+
+    void testStart( const QString &) {}
+    void testEnd() {}
+    void testListStart() {}
+    void testListEnd() {}
+    void blockStart(int lineNumber){};
+    void blockEnd(int lineNumber){};
+    void hashComment( const QString & ) {}
+    void bracketComment( const QString & ) {}
+    void lineFeed() {}
+    void error( const KSieve::Error & e );
+    void finished();
+
+    void taggedArgument( const QString & tag ) {}
+    void numberArgument( unsigned long number, char ) {}
+
+    void stringArgument( const QString & string, bool, const QString & );
+
+    void stringListArgumentStart(){}
+    void stringListEntry( const QString & string, bool, const QString & );
+    void stringListArgumentEnd(){}
+
+private:
+    Context mContext;
+    QStringList mRequirements;
+    int mLineStart;
+    int mLineEnd;
+};
 }
 
 

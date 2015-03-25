@@ -313,3 +313,110 @@ QString KSieveUi::VacationUtils::composeScript( const QString & messageText, boo
 
     return script;
 }
+
+
+QString KSieveUi::VacationUtils::mergeRequireLine(const QString &script, const QString scriptUpdate)
+{
+    const QByteArray scriptUTF8 = script.trimmed().toUtf8();
+    const QByteArray scriptUpdateUTF8 = scriptUpdate.trimmed().toUtf8();
+
+    if (scriptUTF8.isEmpty()) {
+      return scriptUpdate;
+    }
+
+    if (scriptUpdateUTF8.isEmpty()) {
+        return script;
+    }
+
+    KSieve::Parser parser( scriptUTF8.begin(),
+                           scriptUTF8.begin() + scriptUTF8.length() );
+    KSieve::Parser parserUpdate( scriptUpdateUTF8.begin(),
+                           scriptUpdateUTF8.begin() + scriptUpdateUTF8.length() );
+    RequireExtractor rx, rxUpdate;
+    parser.setScriptBuilder(&rx);
+    parserUpdate.setScriptBuilder(&rxUpdate);
+
+    int insert(0);
+    QStringList lines = script.split(QLatin1Char('\n'));
+    QSet<QString> requirements;
+
+    if (parser.parse() && rx.commandFound()) {
+        insert = rx.lineStart();
+        const int endOld(rx.lineEnd());
+        for (int i=insert; i<=endOld; i++) {
+            lines.removeAt(insert);
+        }
+        requirements = rx.requirements().toSet();
+    }
+
+    if (parserUpdate.parse() && rxUpdate.commandFound()) {
+        requirements += rxUpdate.requirements().toSet();
+    }
+
+    if (requirements.count() > 1) {
+        QStringList req = requirements.toList();
+        req.sort();
+        lines.insert(insert, QString::fromLatin1("require [\"%1\"];").arg(req.join(QLatin1String("\", \""))));
+    } else if  (requirements.count() == 1) {
+        lines.insert(insert, QString::fromLatin1("require \"%1\";").arg(requirements.toList().first()));
+    }
+
+    return lines.join(QLatin1String("\n"));
+}
+
+QString KSieveUi::VacationUtils::updateVacationBlock(const QString &oldScript, const QString &newScript)
+{
+    const QByteArray oldScriptUTF8 = oldScript.trimmed().toUtf8();
+    const QByteArray newScriptUTF8 = newScript.trimmed().toUtf8();
+
+    if (oldScriptUTF8.isEmpty()) {
+      return newScript;
+    }
+
+    if (newScriptUTF8.isEmpty()) {
+        return oldScript;
+    }
+
+    KSieve::Parser parserOld( oldScriptUTF8.begin(),
+                           oldScriptUTF8.begin() + oldScriptUTF8.length() );
+    KSieve::Parser parserNew( newScriptUTF8.begin(),
+                           newScriptUTF8.begin() + newScriptUTF8.length() );
+    VacationDataExtractor vdxOld, vdxNew;
+    RequireExtractor rx;
+    KSieveExt::MultiScriptBuilder tsb( &vdxOld , &rx );
+    parserOld.setScriptBuilder(&tsb);
+    parserNew.setScriptBuilder(&vdxNew);
+
+    int startOld(0);
+
+    int startNew(vdxNew.lineStart());
+    int endNew(vdxNew.lineEnd());
+
+    QStringList lines = oldScript.split(QLatin1Char('\n'));
+
+    QString script;
+    if (parserOld.parse() && vdxOld.commandFound()) {
+        startOld = vdxOld.lineStart();
+        const int endOld(vdxOld.lineEnd());
+        for (int i=startOld; i<=endOld; i++) {
+            lines.removeAt(startOld);
+        }
+    } else {
+        if (rx.commandFound()) {                // after require
+            startOld = rx.lineEnd() + 1;
+        } else {
+            startOld = 0;
+        }
+    }
+
+    if (parserNew.parse() && vdxNew.commandFound()) {
+        const int startNew(vdxNew.lineStart());
+        const int endNew(vdxNew.lineEnd());
+        QStringList linesNew = newScript.split(QLatin1Char('\n'));
+        for(int i=endNew;i>=startNew;i--) {
+            lines.insert(startOld, linesNew.at(i));
+        }
+    }
+
+    return lines.join(QLatin1String("\n"));
+}

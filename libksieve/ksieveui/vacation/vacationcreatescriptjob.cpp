@@ -16,6 +16,7 @@
 */
 
 #include "vacationcreatescriptjob.h"
+#include "vacationutils.h"
 #include <kmanagesieve/sievejob.h>
 
 #include <KMessageBox>
@@ -29,6 +30,7 @@ VacationCreateScriptJob::VacationCreateScriptJob(QObject *parent)
       mActivate(false),
       mWasActive(false),
       mSieveJob(0)
+    , mKep14Support(false)
 {
 
 }
@@ -49,20 +51,14 @@ void VacationCreateScriptJob::setServerName(const QString &servername)
     mServerName = servername;
 }
 
-void VacationCreateScriptJob::start()
+const QString &VacationCreateScriptJob::serverName() const
 {
-    if (mUrl.isEmpty()) {
-        qDebug()<<" server url is empty";
-        deleteLater();
-        return;
-    }
-    mSieveJob = KManageSieve::SieveJob::put( mUrl, mScript, mActivate, mWasActive );
-    if ( mActivate )
-        connect( mSieveJob, SIGNAL(gotScript(KManageSieve::SieveJob*,bool,QString,bool)),
-                 SLOT(slotPutActiveResult(KManageSieve::SieveJob*,bool)) );
-    else
-        connect( mSieveJob, SIGNAL(gotScript(KManageSieve::SieveJob*,bool,QString,bool)),
-                 SLOT(slotPutInactiveResult(KManageSieve::SieveJob*,bool)) );
+    return mServerName;
+}
+
+void VacationCreateScriptJob::setKep14Support(bool kep14Support)
+{
+    mKep14Support = kep14Support;
 }
 
 void VacationCreateScriptJob::setServerUrl(const KUrl &url)
@@ -74,6 +70,40 @@ void VacationCreateScriptJob::setScript(const QString &script)
 {
     mScript = script;
 }
+
+void VacationCreateScriptJob::start()
+{
+    if (mUrl.isEmpty()) {
+        qDebug()<<" server url is empty";
+        deleteLater();
+        return;
+    }
+    mSieveJob = KManageSieve::SieveJob::get(mUrl);
+    mSieveJob->setInteractive(false);
+    connect(mSieveJob, SIGNAL(gotScript(KManageSieve::SieveJob*,bool,QString,bool)),
+            SLOT(slotGetScript(KManageSieve::SieveJob*,bool,QString,bool)));
+}
+
+void VacationCreateScriptJob::slotGetScript(KManageSieve::SieveJob *job, bool success, const QString &oldScript, bool active)
+{
+    QString script = mScript;
+    if (success || !oldScript.trimmed().isEmpty()) {
+        script = VacationUtils::mergeRequireLine(oldScript, mScript);
+        script = VacationUtils::updateVacationBlock(oldScript,mScript);
+    }
+    if (mKep14Support) {
+        mSieveJob = KManageSieve::SieveJob::put( mUrl, mScript, false, false );
+    } else {
+        mSieveJob = KManageSieve::SieveJob::put( mUrl, mScript, mActivate, false );         //Never deactivate
+    }
+    if ( mActivate )
+        connect( mSieveJob, SIGNAL(gotScript(KManageSieve::SieveJob*,bool,QString,bool)),
+                 SLOT(slotPutActiveResult(KManageSieve::SieveJob*,bool)) );
+    else
+        connect( mSieveJob, SIGNAL(gotScript(KManageSieve::SieveJob*,bool,QString,bool)),
+                 SLOT(slotPutInactiveResult(KManageSieve::SieveJob*,bool)) );
+}
+
 
 void VacationCreateScriptJob::slotPutActiveResult( KManageSieve::SieveJob * job, bool success )
 {

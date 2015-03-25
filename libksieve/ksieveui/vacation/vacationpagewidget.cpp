@@ -118,6 +118,8 @@ void VacationPageWidget::slotGetResult(const QString &serverName, const QStringL
         return;
     }
 
+    mUrl.setFileName(scriptName);
+
     // Whether the server supports the "date" extension
     const bool supportsSieveDate = mUrl.protocol() == QLatin1String("sieve") && sieveCapabilities.contains(QLatin1String("date"));
 
@@ -137,7 +139,7 @@ void VacationPageWidget::slotGetResult(const QString &serverName, const QStringL
         mVacationWarningWidget->setVisible(true);
     }
 
-    mWasActive = active && scriptActive;
+    mWasActive = active;
     mVacationEditWidget->setEnabled(true);
     mVacationEditWidget->setActivateVacation( active && scriptActive );
     mVacationEditWidget->setMessageText( messageText );
