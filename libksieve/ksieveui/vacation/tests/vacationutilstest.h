@@ -32,6 +32,8 @@ private Q_SLOTS:
     void testParseScript_data();
     void testParseScript();
     void testParseScriptComplex();
+    void testWriteScript();
+    void testWriteSimpleScript();
 };
 }
 #endif // VACATIONUTILSTEST_H

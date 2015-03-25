@@ -163,7 +163,8 @@ void Vacation::slotGetResult( KManageSieve::SieveJob * job, bool success,
 void Vacation::slotDialogOk() {
     kDebug();
     // compose a new script:
-    const QString script = VacationUtils::composeScript( mDialog->messageText(),
+    const bool active = mDialog->activateVacation();
+    const QString script = VacationUtils::composeScript( mDialog->messageText(), active,
                                           mDialog->subject(),
                                           mDialog->notificationInterval(),
                                           mDialog->mailAliases(),
@@ -171,7 +172,6 @@ void Vacation::slotDialogOk() {
                                           mDialog->domainName(),
                                           mDialog->startDate(),
                                           mDialog->endDate() );
-    const bool active = mDialog->activateVacation();
     emit scriptActive( active, mServerName);
 
     kDebug() << "script:" << endl << script;

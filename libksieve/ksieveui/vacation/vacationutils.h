@@ -40,7 +40,7 @@ QString defaultDomainName();
 QDate defaultStartDate();
 QDate defaultEndDate();
 
-QString composeScript( const QString & messageText, const QString &subject,
+QString composeScript( const QString & messageText, bool active, const QString &subject,
                        int notificationInterval,
                        const KMime::Types::AddrSpecList & aliases,
                        bool sendForSpam, const QString & excludeDomain,

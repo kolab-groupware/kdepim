@@ -230,16 +230,17 @@ static const GenericInformationExtractor::StateNode spamNodes[] = {
     { 0,     GIE::StringListArgumentEnd, 0, 0, 14, 0 },                // 16
     { 0,     GIE::StringListArgumentEnd, 0, 18, 0, 0 },                // 17
 
-    { 0,   GIE::TestEnd, 0, 20, 19, 0 }, // 18
-    { 0,   GIE::TestListEnd, 0, 20, 0, 0 }, // 19
+    { 0,   GIE::TestEnd, 0, 21, 20, 0 },     // 18
+    { 0,   GIE::Any, 0, 21, 0, 0 },          // 19
+    { 0,   GIE::TestListEnd, 0, 21, 19, 0 }, // 20
 
     // block of command, find "stop", take nested if's into account:
-    { 0,   GIE::BlockStart, 0, 21, 18, 0 },                // 20
-    { 1,     GIE::CommandStart, "vacation", 24, 24, "vacation" }, // 21
-    { -1,    GIE::Any, 0, 21, 0, 0 },                     // 22
-    { 0,   GIE::BlockEnd, 0, 0, 18, 0 },                  // 23
+    { 0,   GIE::BlockStart, 0, 22, 18, 0 },                       // 21
+    { 1,     GIE::CommandStart, "vacation", 24, 22, "vacation" }, // 22
+    { 1,    GIE::Any, 0, 24, 0, 0 },                              // 23
+    { 0,   GIE::BlockEnd, 0, 25, 23, 0 },                         // 24
 
-    { -1, GIE::Any, 0, 24, 24, 0 }, // 24 end state
+    { -1, GIE::Any, 0, 25, 25, 0 },   // 25 end state
 };
 static const unsigned int numSpamNodes = sizeof spamNodes / sizeof *spamNodes ;
 
@@ -263,39 +264,40 @@ public:
 //   'if not address :domain :contains ["from"] ["mydomain.org"] { keep; stop; }'
 static const GenericInformationExtractor::StateNode domainNodes[] = {
     { 0, GIE::CommandStart, "if", 1, 0, 0 },       // 0
-    { 0,   GIE::TestStart, "not", 2, 0, 0, },      // 1
-    { 0,     GIE::TestStart, "address", 3, 0, 0 }, // 2
+    { 0,   GIE::TestStart, "allof", 2, 3, 0 },     // 1
+    { 0,       GIE::TestListStart, 0, 3, 0, 0 },   // 2
+    { 0,     GIE::TestStart, "address", 4, 3, 0 }, // 3
 
     // :domain and :contains in arbitrary order:
-    { 0,       GIE::TaggedArgument, "domain", 4, 5, 0 },     // 3
-    { 0,       GIE::TaggedArgument, "contains", 7, 0, 0 },   // 4
-    { 0,       GIE::TaggedArgument, "contains", 6, 0, 0 },   // 5
-    { 0,       GIE::TaggedArgument, "domain", 7, 0, 0 },     // 6
+    { 0,       GIE::TaggedArgument, "domain", 5, 6, 0 },     // 4
+    { 0,       GIE::TaggedArgument, "contains", 8, 0, 0 },   // 5
+    { 0,       GIE::TaggedArgument, "contains", 7, 0, 0 },   // 6
+    { 0,       GIE::TaggedArgument, "domain", 8, 0, 0 },     // 7
 
     // accept both string and string-list:
-    { 0,       GIE::StringArgument, "from", 13, 8, "from" },     // 7
-    { 0,       GIE::StringListArgumentStart, 0, 9, 0, 0 },       // 8
-    { 0,         GIE::StringListEntry, "from", 10, 11, "from" }, // 9
-    { 0,         GIE::StringListEntry, 0, 10, 12, 0 },           // 10
-    { 0,       GIE::StringListArgumentEnd, 0, 0, 9, 0 },         // 11
-    { 0,       GIE::StringListArgumentEnd, 0, 13, 0, 0 },        // 12
+    { 0,       GIE::StringArgument, "from", 14, 9, "from" },     // 8
+    { 0,       GIE::StringListArgumentStart, 0, 10, 0, 0 },       // 9
+    { 0,         GIE::StringListEntry, "from", 11, 12, "from" }, // 10
+    { 0,         GIE::StringListEntry, 0, 11, 13, 0 },           // 11
+    { 0,       GIE::StringListArgumentEnd, 0, 0, 10, 0 },         // 12
+    { 0,       GIE::StringListArgumentEnd, 0, 14, 0, 0 },        // 13
 
     // string: save, string-list: save last
-    { 0,       GIE::StringArgument, 0, 17, 14, "domainName" },    // 13
-    { 0,       GIE::StringListArgumentStart, 0, 15, 0, 0 },       // 14
-    { 0,         GIE::StringListEntry, 0, 15, 16, "domainName" }, // 15
-    { 0,       GIE::StringListArgumentEnd, 0, 17, 0, 0 },         // 16
+    { 0,       GIE::StringArgument, 0, 18, 15, "domainName" },    // 14
+    { 0,       GIE::StringListArgumentStart, 0, 16, 0, 0 },       // 15
+    { 0,         GIE::StringListEntry, 0, 16, 17, "domainName" }, // 16
+    { 0,       GIE::StringListArgumentEnd, 0, 18, 0, 0 },         // 17
 
-    { 0,     GIE::TestEnd, 0, 18, 0, 0 },  // 17
-    { 0,   GIE::TestEnd, 0, 19, 0, 0 },    // 18
+    { 0,   GIE::TestEnd, 0, 18, 20, 0 },    // 18
+    { 0,   GIE::Any, 0, 18, 0, 0 },        // 19
 
     // block of commands, find "stop", take nested if's into account:
-    { 0,   GIE::BlockStart, 0, 20, 0, 0 },                 // 19
-    { 1,     GIE::CommandStart, "stop", 23, 22, "stop" },  // 20
-    { -1,    GIE::Any, 0, 20, 0, 0 },                      // 21
-    { 0,   GIE::BlockEnd, 0, 0, 21, 0 },                   // 22
+    { 0,   GIE::BlockStart, 0, 21, 19, 0 },                        // 20
+    { 1,     GIE::CommandStart, "vacation", 23, 21, "vacation" },  // 21
+    { 1,     GIE::Any, 0, 23, 0, 0 },                              // 22
+    { 0,   GIE::BlockEnd, 0, 24, 22, 0 },                          // 23
 
-    { -1, GIE::Any, 0, 23, 23, 0 }  // 23 end state
+    { -1, GIE::Any, 0, 24, 24, 0 }  // 24 end state
 };
 static const unsigned int numDomainNodes = sizeof domainNodes / sizeof *domainNodes ;
 
@@ -308,7 +310,7 @@ public:
     }
 
     QString domainName() /*not const, since map::op[] isn't const*/ {
-        return mResults.count( QLatin1String("stop") ) && mResults.count( QLatin1String("from") )
+        return mResults.count( QLatin1String("vacation") ) && mResults.count( QLatin1String("from") )
                 ? mResults[QLatin1String("domainName")] : QString();
     }
 };
@@ -321,7 +323,7 @@ static const GenericInformationExtractor::StateNode datesNodes[] = {
 
     // handle startDate and endDate in arbitrary order
     { 0,       GIE::TestListStart, 0, 3, 0, 0 },                 // 2
-    { 0,         GIE::TestStart, "currentdate", 4, 0, 0 },         // 3
+    { 0,         GIE::TestStart, "currentdate", 4, 3, 0 },         // 3
     { 0,           GIE::TaggedArgument, "value", 5, 4, 0 },          // 4
     { 0,           GIE::StringArgument, "ge", 6, 8, 0 },             // 5
     { 0,           GIE::StringArgument, "date", 7, 0, 0 },           // 6
@@ -331,7 +333,7 @@ static const GenericInformationExtractor::StateNode datesNodes[] = {
     { 0,           GIE::StringArgument, 0, 11, 0, "endDate" },       // 10
     { 0,         GIE::TestEnd, 0, 12, 0, 0 },                      // 11
 
-    { 0,         GIE::TestStart, "currentdate", 13, 0, 0 },        // 12
+    { 0,         GIE::TestStart, "currentdate", 13, 12, 0 },        // 12
     { 0,           GIE::TaggedArgument, "value", 14, 13, 0 },         // 13
     { 0,           GIE::StringArgument, "le", 15, 17, 0 },           // 14
     { 0,           GIE::StringArgument, "date", 16, 0, 0 },          // 15
